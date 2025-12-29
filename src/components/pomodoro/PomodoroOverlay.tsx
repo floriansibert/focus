@@ -49,7 +49,7 @@ export function PomodoroOverlay() {
       ? tasks.filter((t) => t.parentTaskId === focusedTask.id && t.taskType === TaskType.SUBTASK)
           .sort((a, b) => a.order - b.order)
       : [],
-    [focusedTask, tasks]
+    [focusedTaskId, tasks]
   );
 
   const completedSubtaskCount = useMemo(
@@ -62,7 +62,7 @@ export function PomodoroOverlay() {
     () => focusedTask && focusedTask.parentTaskId
       ? tasks.find(t => t.id === focusedTask.parentTaskId)
       : null,
-    [focusedTask, tasks]
+    [focusedTaskId, tasks]
   );
 
   const parentTaskTags = useMemo(
