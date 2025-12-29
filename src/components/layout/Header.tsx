@@ -8,7 +8,7 @@ import { SearchBar } from '../filters/SearchBar';
 import { Badge } from '../ui/Badge';
 import { PersonBadge } from '../ui/PersonBadge';
 import { DatePicker } from '../ui/DatePicker';
-import { formatTime, getSessionColor } from '../../utils/pomodoro';
+import { formatTime } from '../../utils/pomodoro';
 
 interface HeaderProps {
   onExport?: () => void;
@@ -108,13 +108,6 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isSettingsOpen]);
-
-  // Reset pomodoro hover state when overlay opens/closes
-  useEffect(() => {
-    if (isPomodoroOpen) {
-      setIsPomodoroHovered(false);
-    }
-  }, [isPomodoroOpen]);
 
   // Close tools menu when clicking outside
   useEffect(() => {
@@ -547,7 +540,6 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
 
               {/* Pomodoro Countdown (when minimized) */}
               {(pomodoroState.isRunning || pomodoroState.timeRemaining < pomodoroState.totalTime) && !isPomodoroOpen && (() => {
-                const sessionColors = getSessionColor(pomodoroState.sessionType);
                 // Determine background and text colors based on session type
                 let bgColor = 'bg-blue-100 dark:bg-blue-900';
                 let textColor = 'text-blue-700 dark:text-blue-300';

@@ -7,7 +7,7 @@ import { Badge } from '../ui/Badge';
 import { PersonBadge } from '../ui/PersonBadge';
 import { SubtaskProgressPie } from '../ui/SubtaskProgressPie';
 import { TaskType } from '../../types/task';
-import { isSubtask, canHaveSubtasks } from '../../utils/taskHelpers';
+import { isSubtask } from '../../utils/taskHelpers';
 import { formatRecurrence } from '../../utils/date';
 
 export function PomodoroOverlay() {
