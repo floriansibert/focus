@@ -65,9 +65,22 @@ export function DataOperationCard({ operation }: DataOperationCardProps) {
               <AlertCircle size={14} className="text-red-600 dark:text-red-400" />
             )}
           </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
-            {formatTimestamp(operation.timestamp)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              {formatTimestamp(operation.timestamp)}
+            </p>
+            {/* Import Mode Badge */}
+            {isImport && operation.importMode && (
+              <span className={`
+                text-xs px-2 py-0.5 rounded-full font-medium
+                ${operation.importMode === 'merge'
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                  : 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'}
+              `}>
+                {operation.importMode === 'merge' ? 'Merged' : 'Replaced'}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Format Icon */}
@@ -108,20 +121,6 @@ export function DataOperationCard({ operation }: DataOperationCardProps) {
           <div className="text-xs text-gray-600 dark:text-gray-400">People</div>
         </div>
       </div>
-
-      {/* Import Mode Badge */}
-      {isImport && operation.importMode && (
-        <div className="flex items-center gap-2">
-          <span className={`
-            text-xs px-2 py-1 rounded-full font-medium
-            ${operation.importMode === 'merge'
-              ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-              : 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'}
-          `}>
-            {operation.importMode === 'merge' ? 'Merged' : 'Replaced'}
-          </span>
-        </div>
-      )}
 
       {/* Error Message */}
       {!operation.success && operation.errorMessage && (
