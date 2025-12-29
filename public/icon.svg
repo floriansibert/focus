@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Q1: Urgent & Important (top-left, red) -->
+  <rect x="2" y="2" width="12" height="12" rx="2" fill="#EF4444" />
+
+  <!-- Q2: Not Urgent & Important (top-right, blue) -->
+  <rect x="18" y="2" width="12" height="12" rx="2" fill="#3B82F6" />
+
+  <!-- Q3: Urgent & Not Important (bottom-left, amber) -->
+  <rect x="2" y="18" width="12" height="12" rx="2" fill="#F59E0B" />
+
+  <!-- Q4: Not Urgent & Not Important (bottom-right, gray) -->
+  <rect x="18" y="18" width="12" height="12" rx="2" fill="#9CA3AF" />
+</svg>

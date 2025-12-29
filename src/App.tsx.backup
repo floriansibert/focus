@@ -1,0 +1,84 @@
+import { useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { Header } from './components/layout/Header';
+import { Matrix } from './components/matrix/Matrix';
+import { useTaskStore } from './store/taskStore';
+import { QuadrantType } from './types/task';
+
+function App() {
+  const { loadFromDB, tasks, addTask, addTag } = useTaskStore();
+
+  useEffect(() => {
+    // Load data from IndexedDB on mount
+    loadFromDB().then(() => {
+      // Add some sample data if empty
+      if (tasks.length === 0) {
+        // Add sample tags
+        addTag({ name: 'Work', color: '#3B82F6' });
+        addTag({ name: 'Personal', color: '#10B981' });
+        addTag({ name: 'Health', color: '#EF4444' });
+
+        // Add sample tasks
+        addTask({
+          title: 'Fix critical bug in production',
+          description: 'Users are experiencing login issues',
+          quadrant: QuadrantType.URGENT_IMPORTANT,
+          completed: false,
+          priority: 0,
+          isRecurring: false,
+          trackedTime: 0,
+          timeEntries: [],
+          tags: [],
+        });
+
+        addTask({
+          title: 'Plan Q1 strategy meeting',
+          description: 'Prepare slides and agenda for next quarter',
+          quadrant: QuadrantType.NOT_URGENT_IMPORTANT,
+          completed: false,
+          priority: 0,
+          isRecurring: false,
+          trackedTime: 0,
+          timeEntries: [],
+          tags: [],
+        });
+
+        addTask({
+          title: 'Respond to team emails',
+          description: 'Check and respond to non-urgent messages',
+          quadrant: QuadrantType.URGENT_NOT_IMPORTANT,
+          completed: false,
+          priority: 0,
+          isRecurring: false,
+          trackedTime: 0,
+          timeEntries: [],
+          tags: [],
+        });
+
+        addTask({
+          title: 'Browse social media',
+          description: 'Mindless scrolling - should minimize',
+          quadrant: QuadrantType.NOT_URGENT_NOT_IMPORTANT,
+          completed: false,
+          priority: 0,
+          isRecurring: false,
+          trackedTime: 0,
+          timeEntries: [],
+          tags: [],
+        });
+      }
+    });
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header />
+      <main className="max-w-7xl mx-auto">
+        <Matrix />
+      </main>
+      <Toaster position="bottom-right" />
+    </div>
+  );
+}
+
+export default App;
