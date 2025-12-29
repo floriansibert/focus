@@ -12,7 +12,7 @@ Focus is an Eisenhower Priority Matrix task management application built with Re
 # Start development server
 npm run dev
 
-# Build for production
+# Build for production (creates single HTML file)
 npm run build
 
 # Lint code
@@ -22,15 +22,18 @@ npm run lint
 npm run preview
 ```
 
+**Build Output**: The app uses `vite-plugin-singlefile` to bundle everything into a single HTML file for easy deployment and offline use. App version, build time, and author are injected as constants via Vite's `define` config.
+
 ## Core Architecture
 
 ### State Management (Zustand)
 
-The app uses Zustand for state management with three primary stores:
+The app uses Zustand for state management with four primary stores:
 
 - **`taskStore`** (`src/store/taskStore.ts`): Manages tasks, tags, time tracking, and persistence to IndexedDB
 - **`uiStore`** (`src/store/uiStore.ts`): Handles UI state (theme, active view, filters, command palette)
 - **`historyStore`** (`src/store/historyStore.ts`): Manages undo/redo functionality
+- **`eventHistoryStore`** (`src/store/eventHistoryStore.ts`): Manages history view filtering and display
 
 All stores automatically sync to appropriate storage (IndexedDB for tasks/tags, localStorage for UI preferences).
 
