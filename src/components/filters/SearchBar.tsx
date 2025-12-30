@@ -15,6 +15,7 @@ export function SearchBar() {
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Search tasks..."
+        tabIndex={-1}
         className="
           w-full pl-10 pr-10 py-2 rounded-lg border
           bg-white dark:bg-gray-800
@@ -29,6 +30,7 @@ export function SearchBar() {
       {searchQuery && (
         <button
           onClick={() => setSearchQuery('')}
+          tabIndex={-1}
           className="
             absolute inset-y-0 right-0 pr-3 flex items-center
             text-gray-400 hover:text-gray-600 dark:hover:text-gray-300

@@ -34,6 +34,7 @@ export function TagSelector({ selectedTags, onChange }: TagSelectorProps) {
             key={tag.id}
             type="button"
             onClick={() => toggleTag(tag.id)}
+            tabIndex={-1}
             className={`
               transition-all
               ${isSelected ? 'scale-105' : 'opacity-60 hover:opacity-100'}

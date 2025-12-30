@@ -94,6 +94,7 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
       `}
       {...attributes}
       {...listeners}
+      tabIndex={-1}
       onClick={(e) => {
         // Only trigger edit if clicking on the card itself, not on buttons
         if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'H3' || (e.target as HTMLElement).tagName === 'P') {
@@ -129,6 +130,7 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
               e.stopPropagation();
               toggleComplete(task.id);
             }}
+            tabIndex={-1}
             className="mt-0.5 flex-shrink-0"
           >
             <div
@@ -153,6 +155,7 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
             e.stopPropagation();
             toggleStar(task.id);
           }}
+          tabIndex={-1}
           className="mt-0.5 flex-shrink-0"
           title={task.isStarred ? 'Unstar task' : 'Star task'}
         >
@@ -229,6 +232,7 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
                 });
               }
             }}
+            tabIndex={-1}
             className="flex-shrink-0 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity transition-colors"
             title="Add subtask"
           >
@@ -242,6 +246,7 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
             e.stopPropagation();
             startPomodoroWithTask(taskId);
           }}
+          tabIndex={-1}
           className="flex-shrink-0 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity transition-colors"
           title="Start Pomodoro timer with this task"
           aria-label="Start Pomodoro"
@@ -256,6 +261,7 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
               deleteTask(task.id);
             }
           }}
+          tabIndex={-1}
           className="flex-shrink-0 text-gray-400 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity transition-colors"
           title="Delete task"
         >

@@ -57,6 +57,7 @@ export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) 
               e.stopPropagation();
               toggleComplete(subtask.id);
             }}
+            tabIndex={-1}
             className="flex-shrink-0"
           >
             <div
@@ -77,6 +78,7 @@ export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) 
           {/* Title */}
           <button
             onClick={() => onSubtaskClick?.(subtask)}
+            tabIndex={-1}
             className={`
               flex-1 text-left text-sm
               ${subtask.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}
@@ -95,6 +97,7 @@ export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) 
                 deleteTask(subtask.id);
               }
             }}
+            tabIndex={-1}
             className="flex-shrink-0 text-gray-400 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
             aria-label="Delete subtask"
           >

@@ -85,6 +85,7 @@ export function QuadrantHeader({ info, taskCount, onAddTask, taskIdsWithSubtasks
               e.stopPropagation();
               toggleStarredForQuadrant(info.type);
             }}
+            tabIndex={-1}
             className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             title={isStarredFilterActive ? 'Show all tasks' : 'Show starred only'}
           >
@@ -105,6 +106,7 @@ export function QuadrantHeader({ info, taskCount, onAddTask, taskIdsWithSubtasks
                 e.stopPropagation();
                 handleToggleExpandCollapse();
               }}
+              tabIndex={-1}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               title={allCollapsed ? 'Expand all tasks' : 'Collapse all tasks'}
             >
@@ -124,6 +126,7 @@ export function QuadrantHeader({ info, taskCount, onAddTask, taskIdsWithSubtasks
 
           <button
             onClick={onAddTask}
+            tabIndex={-1}
             className="p-1 rounded transition-colors text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700"
             aria-label="Add task"
             title="Add task"

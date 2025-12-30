@@ -34,6 +34,7 @@ export function PeopleSelector({ selectedPeople, onChange }: PeopleSelectorProps
             key={person.id}
             type="button"
             onClick={() => togglePerson(person.id)}
+            tabIndex={-1}
             className={`
               transition-all
               ${isSelected ? 'scale-105' : 'opacity-60 hover:opacity-100'}

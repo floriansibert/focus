@@ -21,6 +21,7 @@ export function SubtaskProgressPie({
   return (
     <button
       onClick={onClick}
+      tabIndex={-1}
       className="flex-shrink-0 mt-0.5 cursor-pointer hover:opacity-80 transition-opacity relative group"
       title={`${completed} of ${total} subtasks - Click to ${isCollapsed ? 'expand' : 'collapse'}`}
     >

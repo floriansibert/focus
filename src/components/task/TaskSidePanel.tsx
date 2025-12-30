@@ -11,7 +11,8 @@ import { SubtaskProgressPie } from '../ui/SubtaskProgressPie';
 import { QuadrantType, TaskType, type Task, type RecurrenceConfig } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
 import { QUADRANT_INFO } from '../../types/quadrant';
-import { isSubtask, canHaveSubtasks } from '../../utils/taskHelpers';
+import { isSubtask, canHaveSubtasks, hasSubtasks } from '../../utils/taskHelpers';
+import { useUIStore } from '../../store/uiStore';
 
 interface TaskSidePanelProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export function TaskSidePanel({
   onNavigate,
 }: TaskSidePanelProps) {
   const { addTask, updateTask, toggleComplete, toggleStar, tasks, addSubtask } = useTaskStore();
+  const { toggleTaskCollapse, collapsedTasks } = useUIStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -131,37 +133,37 @@ export function TaskSidePanel({
       return;
     }
 
-    // Edit mode: compare with original task values
-    const titleChanged = title !== task.title;
-    const descriptionChanged = (description || '') !== (task.description || '');
-    const quadrantChanged = quadrant !== task.quadrant;
+    // Edit mode: compare with latest task values from store (not original prop)
+    const titleChanged = title !== latestTask.title;
+    const descriptionChanged = (description || '') !== (latestTask.description || '');
+    const quadrantChanged = quadrant !== latestTask.quadrant;
 
     // Date comparison - compare ISO strings or both undefined
     const dueDateChanged =
-      (dueDate?.toISOString() || '') !== (task.dueDate ? new Date(task.dueDate).toISOString() : '');
+      (dueDate?.toISOString() || '') !== (latestTask.dueDate ? new Date(latestTask.dueDate).toISOString() : '');
 
     // Tags comparison - deep array equality
     const tagsChanged =
       JSON.stringify([...(selectedTags || [])].sort()) !==
-      JSON.stringify([...(task.tags || [])].sort());
+      JSON.stringify([...(latestTask.tags || [])].sort());
 
     // People comparison - deep array equality
     const peopleChanged =
       JSON.stringify([...(selectedPeople || [])].sort()) !==
-      JSON.stringify([...(task.people || [])].sort());
+      JSON.stringify([...(latestTask.people || [])].sort());
 
-    const isRecurringChanged = isRecurring !== (task.isRecurring || false);
+    const isRecurringChanged = isRecurring !== (latestTask.isRecurring || false);
 
     // Recurrence comparison - only if isRecurring is true
     const recurrenceChanged = isRecurring &&
-      JSON.stringify(recurrence) !== JSON.stringify(task.recurrence);
+      JSON.stringify(recurrence) !== JSON.stringify(latestTask.recurrence);
 
-    const isStarredChanged = isStarred !== (task.isStarred || false);
-    const completedChanged = completed !== (task.completed || false);
+    const isStarredChanged = isStarred !== (latestTask.isStarred || false);
+    const completedChanged = completed !== (latestTask.completed || false);
 
     // CompletedAt comparison - compare ISO strings or both undefined
     const completedAtChanged =
-      (completedAt?.toISOString() || '') !== (task.completedAt ? new Date(task.completedAt).toISOString() : '');
+      (completedAt?.toISOString() || '') !== (latestTask.completedAt ? new Date(latestTask.completedAt).toISOString() : '');
 
     const changed =
       titleChanged ||
@@ -177,7 +179,7 @@ export function TaskSidePanel({
       completedAtChanged;
 
     setHasChanges(changed);
-  }, [title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, isStarred, completed, completedAt, task]);
+  }, [title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, isStarred, completed, completedAt, latestTask]);
 
   // Handler for adding pending subtasks in add mode
   const handleAddPendingSubtask = useCallback(() => {
@@ -277,9 +279,28 @@ export function TaskSidePanel({
       if (e.key === 'ArrowUp') {
         e.preventDefault();
         onNavigate?.('up');
+        // Remove focus from any clicked task card to avoid purple focus box
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         onNavigate?.('down');
+        // Remove focus from any clicked task card to avoid purple focus box
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        // Only work with existing tasks (not in add mode) that can have subtasks
+        if (latestTask && canHaveSubtasks(latestTask) && hasSubtasks(latestTask, tasks)) {
+          const isCollapsed = collapsedTasks.has(latestTask.id);
+          // Right arrow: expand (only if currently collapsed)
+          // Left arrow: collapse (only if currently expanded)
+          if ((e.key === 'ArrowRight' && isCollapsed) || (e.key === 'ArrowLeft' && !isCollapsed)) {
+            e.preventDefault();
+            toggleTaskCollapse(latestTask.id);
+          }
+        }
       } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         handleSubmit();
@@ -288,7 +309,7 @@ export function TaskSidePanel({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onNavigate, handleSubmit]);
+  }, [isOpen, onNavigate, handleSubmit, latestTask, tasks, toggleTaskCollapse, collapsedTasks]);
 
   if (!isOpen) return null;
 
@@ -302,6 +323,7 @@ export function TaskSidePanel({
         </h2>
         <button
           onClick={onClose}
+          tabIndex={-1}
           className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           aria-label="Close panel"
         >
@@ -635,6 +657,7 @@ export function TaskSidePanel({
                               <button
                                 type="button"
                                 onClick={() => handleRemovePendingSubtask(index)}
+                                tabIndex={-1}
                                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
                                 title="Remove subtask"
                               >
@@ -673,7 +696,7 @@ export function TaskSidePanel({
         />
 
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Tip: Press <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">↑</kbd>/<kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">↓</kbd> to navigate tasks, <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Cmd+Enter</kbd> to save
+          Tip: Press <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">↑</kbd>/<kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">↓</kbd> to navigate, <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">←</kbd>/<kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">→</kbd> to collapse/expand subtasks, <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Cmd+Enter</kbd> to save
         </p>
       </div>
 
