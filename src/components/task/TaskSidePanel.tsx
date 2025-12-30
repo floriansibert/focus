@@ -133,6 +133,9 @@ export function TaskSidePanel({
       return;
     }
 
+    // Safety check - latestTask should always exist if task exists, but TypeScript needs assurance
+    if (!latestTask) return;
+
     // Edit mode: compare with latest task values from store (not original prop)
     const titleChanged = title !== latestTask.title;
     const descriptionChanged = (description || '') !== (latestTask.description || '');
