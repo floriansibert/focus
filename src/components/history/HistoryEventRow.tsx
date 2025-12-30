@@ -153,8 +153,8 @@ export function HistoryEventRow({ event, onTaskClick }: HistoryEventRowProps) {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="flex items-center gap-2 mb-1">
+          {/* Header with Task Title */}
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {formatTime(event.timestamp)}
             </span>
@@ -162,28 +162,27 @@ export function HistoryEventRow({ event, onTaskClick }: HistoryEventRowProps) {
             <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
               {getActionLabel()}
             </span>
+            <span className="text-xs text-gray-400 dark:text-gray-600">•</span>
+            <button
+              onClick={() => !event.isDeleted && onTaskClick(event.taskId)}
+              disabled={event.isDeleted}
+              className={`
+                text-sm font-medium text-left
+                ${
+                  event.isDeleted
+                    ? 'text-gray-400 dark:text-gray-600 line-through cursor-not-allowed'
+                    : 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer'
+                }
+              `}
+            >
+              {event.taskTitle}
+              {event.isDeleted && (
+                <span className="ml-2 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
+                  Deleted
+                </span>
+              )}
+            </button>
           </div>
-
-          {/* Task Title */}
-          <button
-            onClick={() => !event.isDeleted && onTaskClick(event.taskId)}
-            disabled={event.isDeleted}
-            className={`
-              text-sm font-medium text-left
-              ${
-                event.isDeleted
-                  ? 'text-gray-400 dark:text-gray-600 line-through cursor-not-allowed'
-                  : 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer'
-              }
-            `}
-          >
-            {event.taskTitle}
-            {event.isDeleted && (
-              <span className="ml-2 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
-                Deleted
-              </span>
-            )}
-          </button>
 
           {/* Change Details */}
           {renderChangeDetails()}
