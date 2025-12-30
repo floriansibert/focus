@@ -128,7 +128,7 @@ export function PomodoroOverlay() {
   const sessionLabel = getSessionLabel(pomodoroState.sessionType);
 
   // Calculate progress for circular indicator
-  const radius = 140;
+  const radius = 170;
   const circumference = 2 * Math.PI * radius;
   const progress = 1 - pomodoroState.timeRemaining / pomodoroState.totalTime;
 
@@ -418,13 +418,13 @@ export function PomodoroOverlay() {
         <div className="relative">
           {/* SVG circular progress */}
           <svg
-            className="w-80 h-80 transform -rotate-90"
-            viewBox="0 0 320 320"
+            className="w-96 h-96 transform -rotate-90"
+            viewBox="0 0 384 384"
           >
             {/* Background circle */}
             <circle
-              cx="160"
-              cy="160"
+              cx="192"
+              cy="192"
               r={radius}
               fill="none"
               stroke="currentColor"
@@ -434,8 +434,8 @@ export function PomodoroOverlay() {
 
             {/* Progress circle */}
             <circle
-              cx="160"
-              cy="160"
+              cx="192"
+              cy="192"
               r={radius}
               fill="none"
               stroke="currentColor"
