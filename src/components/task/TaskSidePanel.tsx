@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, ArrowRight, ChevronDown, Check, Star, Plus } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { DatePicker } from '../ui/DatePicker';
@@ -48,7 +48,6 @@ export function TaskSidePanel({
   const [completed, setCompleted] = useState(false);
   const [completedAt, setCompletedAt] = useState<Date | undefined>();
   const [errors, setErrors] = useState<{ title?: string }>({});
-  const [hasChanges, setHasChanges] = useState(false);
   const [isQuadrantExpanded, setIsQuadrantExpanded] = useState(false);
   const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
   const [pendingSubtasks, setPendingSubtasks] = useState<Array<{ title: string }>>([]);
@@ -82,6 +81,7 @@ export function TaskSidePanel({
   // Reset form when panel opens/closes or task changes
   useEffect(() => {
     if (isOpen) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       if (task) {
         // Edit mode
         setTitle(task.title);
@@ -113,6 +113,7 @@ export function TaskSidePanel({
         setNewSubtaskTitle('');
       }
       setErrors({});
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen, task, defaultQuadrant]);
 
@@ -120,21 +121,20 @@ export function TaskSidePanel({
   useEffect(() => {
     if (isOpen && task) {
       const hasSubtasks = tasks.some((t) => t.parentTaskId === task.id);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsSubtasksExpanded(hasSubtasks);
     }
-  }, [isOpen, task?.id, tasks]);
+  }, [isOpen, task, tasks]);
 
-  // Track form changes
-  useEffect(() => {
+  // Compute form changes (derived state)
+  const hasChanges = useMemo(() => {
     if (!task) {
       // Add mode: always consider as having changes if any field is filled
-      const hasContent = title.trim() !== '' || description.trim() !== '';
-      setHasChanges(hasContent);
-      return;
+      return title.trim() !== '' || description.trim() !== '';
     }
 
     // Safety check - latestTask should always exist if task exists, but TypeScript needs assurance
-    if (!latestTask) return;
+    if (!latestTask) return false;
 
     // Edit mode: compare with latest task values from store (not original prop)
     const titleChanged = title !== latestTask.title;
@@ -168,7 +168,7 @@ export function TaskSidePanel({
     const completedAtChanged =
       (completedAt?.toISOString() || '') !== (latestTask.completedAt ? new Date(latestTask.completedAt).toISOString() : '');
 
-    const changed =
+    return (
       titleChanged ||
       descriptionChanged ||
       quadrantChanged ||
@@ -179,10 +179,9 @@ export function TaskSidePanel({
       recurrenceChanged ||
       isStarredChanged ||
       completedChanged ||
-      completedAtChanged;
-
-    setHasChanges(changed);
-  }, [title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, isStarred, completed, completedAt, latestTask]);
+      completedAtChanged
+    );
+  }, [task, latestTask, title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, isStarred, completed, completedAt]);
 
   // Handler for adding pending subtasks in add mode
   const handleAddPendingSubtask = useCallback(() => {
@@ -269,9 +268,6 @@ export function TaskSidePanel({
         }
       }
     }
-
-    // Reset hasChanges flag after save
-    setHasChanges(false);
   }, [validate, task, updateTask, addTask, title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, completed, completedAt, isStarred, pendingSubtasks, addSubtask]);
 
   // Arrow key navigation
