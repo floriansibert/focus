@@ -31,9 +31,8 @@ export function useRecurringTasks() {
         const lastInstance = instances[0];
 
         // Determine the reference date for checking if we should generate
-        const referenceDate = lastInstance
-          ? lastInstance.createdAt
-          : parentTask.createdAt;
+        // Use undefined if no last instance exists - this triggers immediate first instance creation
+        const referenceDate = lastInstance?.createdAt;
 
         // Check if we should generate a new instance
         if (shouldGenerateInstance(referenceDate, parentTask.recurrence, now)) {

@@ -7,7 +7,7 @@ import { getInitialPomodoroState, calculateNextSession, type PomodoroState } fro
 interface UIStore extends FilterState {
   // UI State
   theme: 'light' | 'dark';
-  activeView: 'matrix' | 'analytics' | 'history';
+  activeView: 'matrix' | 'analytics' | 'history' | 'templates';
   commandPaletteOpen: boolean;
   filtersExpanded: boolean;
   collapsedTasks: Set<string>;
@@ -24,7 +24,7 @@ interface UIStore extends FilterState {
   // Actions
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
-  setActiveView: (view: 'matrix' | 'analytics' | 'history') => void;
+  setActiveView: (view: 'matrix' | 'analytics' | 'history' | 'templates') => void;
   toggleCommandPalette: () => void;
   toggleFilters: () => void;
   setHelpModalSection: (section: string) => void;

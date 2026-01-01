@@ -13,6 +13,7 @@ import { SubtaskProgressPie } from '../ui/SubtaskProgressPie';
 import { ParentSelectorModal } from './ParentSelectorModal';
 import { QuadrantType, TaskType, type Task, type RecurrenceConfig } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
+import { useUIStore } from '../../store/uiStore';
 import { QUADRANT_INFO } from '../../types/quadrant';
 import { isSubtask, canHaveSubtasks } from '../../utils/taskHelpers';
 import toast from 'react-hot-toast';
@@ -328,6 +329,25 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
               className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 flex items-center gap-1"
             >
               Go to parent task <ArrowRight size={12} />
+            </button>
+          </div>
+        )}
+
+        {/* Recurring Instance Info */}
+        {task && latestTask && latestTask.taskType === TaskType.RECURRING_INSTANCE && latestTask.parentTaskId && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-900 dark:text-blue-100">
+              This task was created from a recurring template{parentTask ? `: ${parentTask.title}` : ''}
+            </p>
+            <button
+              onClick={() => {
+                const { setActiveView } = useUIStore.getState();
+                setActiveView('templates');
+                onClose();
+              }}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 flex items-center gap-1"
+            >
+              Go to template <ArrowRight size={12} />
             </button>
           </div>
         )}

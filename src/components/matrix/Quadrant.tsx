@@ -41,10 +41,11 @@ export const Quadrant = memo(function Quadrant({ type, onAddTask, onEditTask, se
   // Apply global filters (search, tags, completion) and per-quadrant star filter
   const filteredTasks = useTaskFilters(quadrantTasks, type);
 
-  // Filter out subtasks from top-level display
+  // Filter out subtasks and recurring parent templates from top-level display
   const topLevelTasks = useMemo(
     () => filteredTasks
       .filter((task) => !isSubtask(task))
+      .filter((task) => task.taskType !== TaskType.RECURRING_PARENT)
       .sort((a, b) => a.order - b.order),
     [filteredTasks]
   );

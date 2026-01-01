@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, LayoutGrid, BarChart3, History, Moon, Sun, Undo, Redo, Download, Upload, Info, BookOpen, Settings } from 'lucide-react';
+import { Search, LayoutGrid, BarChart3, History, Repeat, Moon, Sun, Undo, Redo, Download, Upload, Info, BookOpen, Settings } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 
@@ -57,6 +57,16 @@ export function CommandPalette({ onExport, onImport, onAbout, onHelp, onSettings
         toggleCommandPalette();
       },
       keywords: ['history', 'timeline', 'events', 'log', 'activity'],
+    },
+    {
+      id: 'templates',
+      label: 'Go to Templates',
+      icon: <Repeat size={18} />,
+      action: () => {
+        setActiveView('templates');
+        toggleCommandPalette();
+      },
+      keywords: ['templates', 'recurring', 'repeat', 'schedule'],
     },
     {
       id: 'undo',

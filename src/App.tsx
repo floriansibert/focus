@@ -5,6 +5,7 @@ import { ExportReminderBanner } from './components/layout/ExportReminderBanner';
 import { Matrix } from './components/matrix/Matrix';
 import { AnalyticsDashboard } from './components/analytics/AnalyticsDashboard';
 import { HistoryDashboard } from './components/history/HistoryDashboard';
+import { TemplatesDashboard } from './components/templates/TemplatesDashboard';
 import { CommandPalette } from './components/layout/CommandPalette';
 import { KeyboardShortcutsHelp } from './components/layout/KeyboardShortcutsHelp';
 import { ExportModal } from './components/export/ExportModal';
@@ -91,6 +92,12 @@ function App() {
       ctrl: true,
       description: 'Go to History view',
       action: () => setActiveView('history'),
+    },
+    {
+      key: 't',
+      ctrl: true,
+      description: 'Go to Templates view',
+      action: () => setActiveView('templates'),
     },
     {
       key: '1',
@@ -283,8 +290,10 @@ function App() {
           <Matrix />
         ) : activeView === 'analytics' ? (
           <AnalyticsDashboard />
-        ) : (
+        ) : activeView === 'history' ? (
           <HistoryDashboard />
+        ) : (
+          <TemplatesDashboard />
         )}
       </main>
 

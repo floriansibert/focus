@@ -7,10 +7,13 @@ import {
   ArrowRight,
   Star,
   CornerDownRight,
+  Link,
 } from 'lucide-react';
 import type { HistoryEntry } from '../../types/task';
+import { TaskType } from '../../types/task';
 import { QUADRANT_INFO } from '../../types/quadrant';
 import { useTaskStore } from '../../store/taskStore';
+import { useUIStore } from '../../store/uiStore';
 
 interface HistoryEventRowProps {
   event: HistoryEntry;
@@ -46,6 +49,9 @@ export function HistoryEventRow({ event, onTaskClick }: HistoryEventRowProps) {
   const colorClass = ACTION_COLORS[event.action] || ACTION_COLORS.task_updated;
   const tags = useTaskStore((state) => state.tags);
   const people = useTaskStore((state) => state.people);
+  const tasks = useTaskStore((state) => state.tasks);
+  const task = tasks.find((t) => t.id === event.taskId);
+  const isRecurringInstance = task && task.taskType === TaskType.RECURRING_INSTANCE;
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString('en-US', {
@@ -180,6 +186,20 @@ export function HistoryEventRow({ event, onTaskClick }: HistoryEventRowProps) {
                 <span className="ml-2 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
                   Deleted
                 </span>
+              )}
+              {!event.isDeleted && isRecurringInstance && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const { setActiveView } = useUIStore.getState();
+                    setActiveView('templates');
+                  }}
+                  className="ml-2 inline-flex items-center gap-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                  title="Created from template (click to view)"
+                >
+                  <Link size={10} />
+                  Template
+                </button>
               )}
             </button>
           </div>

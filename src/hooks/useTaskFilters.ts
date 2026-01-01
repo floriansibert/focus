@@ -137,6 +137,9 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
     }
 
     // Return tasks that are in the final match set
-    return candidateTasks.filter((task) => directMatches.has(task.id));
+    // Also filter out recurring parent templates (they should never be visible)
+    return candidateTasks
+      .filter((task) => directMatches.has(task.id))
+      .filter((task) => task.taskType !== TaskType.RECURRING_PARENT);
   }, [tasks, searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showStarredOnly, allTags, allPeople, quadrant, starredFilterByQuadrant]);
 }

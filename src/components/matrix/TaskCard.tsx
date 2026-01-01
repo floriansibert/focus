@@ -1,7 +1,7 @@
 import { useMemo, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, Trash2, Repeat, CornerDownRight, Plus, Star, Clock } from 'lucide-react';
+import { Check, Trash2, Repeat, CornerDownRight, Plus, Star, Clock, Link } from 'lucide-react';
 import type { Task } from '../../types/task';
 import { TaskType } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
@@ -178,6 +178,19 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
               >
                 <CornerDownRight size={14} />
               </span>
+            )}
+            {task.taskType === TaskType.RECURRING_INSTANCE && (
+              <button
+                className="flex-shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                title="Created from template (click to view)"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const { setActiveView } = useUIStore.getState();
+                  setActiveView('templates');
+                }}
+              >
+                <Link size={14} />
+              </button>
             )}
             <h3
               className={`

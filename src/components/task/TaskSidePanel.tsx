@@ -380,6 +380,25 @@ export function TaskSidePanel({
           </div>
         )}
 
+        {/* Recurring Instance Info */}
+        {task && latestTask && latestTask.taskType === TaskType.RECURRING_INSTANCE && latestTask.parentTaskId && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-900 dark:text-blue-100">
+              This task was created from a recurring template{parentTask ? `: ${parentTask.title}` : ''}
+            </p>
+            <button
+              onClick={() => {
+                const { setActiveView } = useUIStore.getState();
+                setActiveView('templates');
+                onClose();
+              }}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 flex items-center gap-1"
+            >
+              Go to template <ArrowRight size={12} />
+            </button>
+          </div>
+        )}
+
         <Input
           label="Title"
           value={title}

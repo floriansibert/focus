@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Moon, Sun, Tag, Users, Filter, X, LayoutGrid, BarChart3, History, Download, Upload, Info, Settings, Calendar, BookOpen, Timer, Wrench, Play, Pause, RotateCcw } from 'lucide-react';
+import { Moon, Sun, Tag, Users, Filter, X, LayoutGrid, BarChart3, History, Download, Upload, Info, Settings, Calendar, BookOpen, Timer, Wrench, Play, Pause, RotateCcw, Repeat } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
 import { useTaskStore } from '../../store/taskStore';
 import { TagManager } from '../task/TagManager';
@@ -505,6 +505,21 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                   title="History View"
                 >
                   <History size={18} />
+                </button>
+                <button
+                  onClick={() => setActiveView('templates')}
+                  className={`
+                    p-1.5 rounded transition-colors
+                    ${
+                      activeView === 'templates'
+                        ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    }
+                  `}
+                  aria-label="Templates view"
+                  title="Templates View"
+                >
+                  <Repeat size={18} />
                 </button>
               </div>
 
