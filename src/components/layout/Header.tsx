@@ -31,17 +31,18 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
 
-  const { selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, toggleTag, togglePerson, setShowCompleted, setCompletedTasksCutoffDate, setShowCompletedOnly, setCompletedDateRange, clearFilters, searchQuery } =
+  const { selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, toggleTag, togglePerson, setShowCompleted, setCompletedTasksCutoffDate, setShowCompletedOnly, setCompletedDateRange, setShowOverdueOnly, clearFilters, searchQuery } =
     useUIStore();
   const tags = useTaskStore((state) => state.tags);
   const people = useTaskStore((state) => state.people);
 
-  const hasActiveFilters = searchQuery || selectedTags.length > 0 || selectedPeople.length > 0 || !showCompleted || showCompletedOnly;
+  const hasActiveFilters = searchQuery || selectedTags.length > 0 || selectedPeople.length > 0 || !showCompleted || showCompletedOnly || showOverdueOnly;
   const filterCount = selectedTags.length +
     selectedPeople.length +
     (searchQuery ? 1 : 0) +
     (showCompleted ? 0 : 1) +
-    (showCompletedOnly ? 1 : 0);
+    (showCompletedOnly ? 1 : 0) +
+    (showOverdueOnly ? 1 : 0);
 
   // Helper function to calculate date range based on preset
   const getDateRangeForPreset = (preset: string): { start: Date; end: Date } => {
@@ -300,6 +301,22 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                           </p>
                         )}
                       </div>
+
+                      {/* Show Overdue Only Toggle */}
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={showOverdueOnly}
+                          onChange={(e) => setShowOverdueOnly(e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Show overdue tasks only
+                        </span>
+                      </label>
+
+                      {/* Separator */}
+                      <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
                       {/* Show Completed Toggle */}
                       <label className="flex items-center gap-2 cursor-pointer">

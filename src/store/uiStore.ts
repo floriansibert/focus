@@ -45,6 +45,8 @@ interface UIStore extends FilterState {
   completedDateRange: { start: Date; end: Date } | null;
   setShowCompletedOnly: (enabled: boolean) => void;
   setCompletedDateRange: (range: { start: Date; end: Date } | null) => void;
+  showOverdueOnly: boolean;
+  setShowOverdueOnly: (enabled: boolean) => void;
   starredFilterByQuadrant: Record<QuadrantType, boolean>;
   toggleStarredForQuadrant: (quadrant: QuadrantType) => void;
   setDateRange: (range?: { start: Date; end: Date }) => void;
@@ -116,6 +118,7 @@ export const useUIStore = create<UIStore>()(
       completedTasksCutoffDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
       showCompletedOnly: false,
       completedDateRange: null,
+      showOverdueOnly: false,
       starredFilterByQuadrant: {
         [QuadrantTypeEnum.URGENT_IMPORTANT]: false,
         [QuadrantTypeEnum.NOT_URGENT_IMPORTANT]: false,
@@ -225,6 +228,8 @@ export const useUIStore = create<UIStore>()(
 
       setCompletedDateRange: (range) => set({ completedDateRange: range }),
 
+      setShowOverdueOnly: (enabled) => set({ showOverdueOnly: enabled }),
+
       toggleStarredForQuadrant: (quadrant) =>
         set((state) => ({
           starredFilterByQuadrant: {
@@ -244,6 +249,7 @@ export const useUIStore = create<UIStore>()(
           completedTasksCutoffDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Reset to 7 days ago
           showCompletedOnly: false,
           completedDateRange: null,
+          showOverdueOnly: false,
           dateRange: undefined,
         }),
 
@@ -355,6 +361,7 @@ export const useUIStore = create<UIStore>()(
         completedTasksCutoffDate: state.completedTasksCutoffDate,
         showCompletedOnly: state.showCompletedOnly,
         completedDateRange: state.completedDateRange,
+        showOverdueOnly: state.showOverdueOnly,
         historyRetentionDays: state.historyRetentionDays,
         exportReminderEnabled: state.exportReminderEnabled,
         exportReminderFrequencyDays: state.exportReminderFrequencyDays,
@@ -375,6 +382,7 @@ export const useUIStore = create<UIStore>()(
               end: new Date(persistedState.completedDateRange.end),
             }
           : null,
+        showOverdueOnly: persistedState?.showOverdueOnly ?? false,
         historyRetentionDays: persistedState?.historyRetentionDays ?? 7,
         exportReminderEnabled: persistedState?.exportReminderEnabled ?? true,
         exportReminderFrequencyDays: persistedState?.exportReminderFrequencyDays ?? 7,

@@ -4,6 +4,7 @@ import { TaskType } from '../types/task';
 import { storageManager } from '../lib/storage';
 import { canHaveSubtasks, areAllSubtasksCompleted, getLatestSubtaskCompletionDate, hasSubtasks, isSubtask } from '../utils/taskHelpers';
 import { historyLogger } from '../lib/historyLogger';
+import { db } from '../lib/db';
 
 interface TaskStore {
   // State
@@ -39,6 +40,11 @@ interface TaskStore {
   addPerson: (person: Omit<Person, 'id'>) => void;
   updatePerson: (id: string, updates: Partial<Person>) => void;
   deletePerson: (id: string) => void;
+
+  // Bulk deletion
+  deleteAllTasks: () => void;
+  deleteAllTags: () => void;
+  deleteAllPeople: () => void;
 
   // Undo/Redo support
   setTasks: (tasks: Task[]) => void;
@@ -381,6 +387,38 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           ...task,
           people: task.people?.filter((personId) => personId !== id) || [],
         })),
+      }));
+
+      get().syncToDB();
+    },
+
+    // Delete all tasks
+    deleteAllTasks: () => {
+      set({ tasks: [] });
+
+      // Also clear history since it references tasks
+      db.history.clear();
+
+      get().syncToDB();
+    },
+
+    // Delete all tags
+    deleteAllTags: () => {
+      set((state) => ({
+        tags: [],
+        // Remove tag associations from all tasks
+        tasks: state.tasks.map((task) => ({ ...task, tags: [] })),
+      }));
+
+      get().syncToDB();
+    },
+
+    // Delete all people
+    deleteAllPeople: () => {
+      set((state) => ({
+        people: [],
+        // Remove people associations from all tasks
+        tasks: state.tasks.map((task) => ({ ...task, people: [] })),
       }));
 
       get().syncToDB();

@@ -8,7 +8,7 @@ import { useTaskStore } from '../store/taskStore';
  * Hook to filter tasks based on current filter state
  */
 export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
-  const { searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, starredFilterByQuadrant } = useUIStore();
+  const { searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, starredFilterByQuadrant } = useUIStore();
   const allTags = useTaskStore((state) => state.tags);
   const allPeople = useTaskStore((state) => state.people);
   const showStarredOnly = quadrant ? starredFilterByQuadrant[quadrant] : false;
@@ -63,6 +63,18 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
 
           matches = matches && (completedDate >= startDate && completedDate <= endDate);
         }
+      }
+
+      // Overdue filter (only show overdue tasks)
+      if (showOverdueOnly) {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Start of today for comparison
+
+        const isOverdue = task.dueDate &&
+                         new Date(task.dueDate) < now &&
+                         !task.completed;
+
+        matches = matches && isOverdue;
       }
 
       // Search query filter
@@ -141,5 +153,5 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
     return candidateTasks
       .filter((task) => directMatches.has(task.id))
       .filter((task) => task.taskType !== TaskType.RECURRING_PARENT);
-  }, [tasks, searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showStarredOnly, allTags, allPeople, quadrant, starredFilterByQuadrant]);
+  }, [tasks, searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, showStarredOnly, allTags, allPeople, quadrant, starredFilterByQuadrant]);
 }

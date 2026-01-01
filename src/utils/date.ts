@@ -135,3 +135,40 @@ export function formatNextOccurrence(date: Date | null | undefined): string {
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
   });
 }
+
+/**
+ * Get date for "today" at start of day
+ */
+export function getToday(): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
+
+/**
+ * Get date for "tomorrow" at start of day
+ */
+export function getTomorrow(): Date {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  return tomorrow;
+}
+
+/**
+ * Get date for next Monday at start of day
+ * If today is Monday, returns next week's Monday
+ */
+export function getNextMonday(): Date {
+  const date = new Date();
+  const currentDay = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+  // Calculate days until next Monday
+  // If today is Monday (1), add 7 days to get next Monday
+  // Otherwise, add days to reach Monday
+  const daysUntilMonday = currentDay === 1 ? 7 : (1 + 7 - currentDay) % 7 || 7;
+
+  date.setDate(date.getDate() + daysUntilMonday);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}

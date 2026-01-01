@@ -23,7 +23,7 @@ interface DatabaseStats {
 
 export function HistoryDashboard() {
   const { loadEvents, isLoading, getEventsByDate, getFilteredEvents, events } = useEventHistoryStore();
-  const { tasks, updateTask } = useTaskStore();
+  const { tasks, updateTask, deleteAllTasks, deleteAllTags, deleteAllPeople } = useTaskStore();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [dbStats, setDbStats] = useState<DatabaseStats | null>(null);
@@ -34,6 +34,9 @@ export function HistoryDashboard() {
   const [isClearDropdownOpen, setIsClearDropdownOpen] = useState(false);
   const [clearMode, setClearMode] = useState<'all' | '7days' | '30days' | '90days' | null>(null);
   const [eventsToDeleteCount, setEventsToDeleteCount] = useState<number>(0);
+  const [showDeleteTasksConfirm, setShowDeleteTasksConfirm] = useState(false);
+  const [showDeleteTagsConfirm, setShowDeleteTagsConfirm] = useState(false);
+  const [showDeletePeopleConfirm, setShowDeletePeopleConfirm] = useState(false);
   const clearHistoryDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -239,6 +242,56 @@ export function HistoryDashboard() {
     }
   };
 
+  const handleDeleteAllTasks = async () => {
+    try {
+      const taskCount = dbStats?.tasks || 0;
+      const historyCount = dbStats?.history || 0;
+
+      deleteAllTasks();
+
+      await loadEvents();
+      await loadDbStats();
+
+      toast.success(`Deleted ${taskCount} tasks and ${historyCount} history events`);
+      setShowDeleteTasksConfirm(false);
+    } catch (error) {
+      console.error('Error deleting all tasks:', error);
+      toast.error('Failed to delete all tasks');
+    }
+  };
+
+  const handleDeleteAllTags = async () => {
+    try {
+      const tagCount = dbStats?.tags || 0;
+
+      deleteAllTags();
+
+      await loadDbStats();
+
+      toast.success(`Deleted ${tagCount} tags`);
+      setShowDeleteTagsConfirm(false);
+    } catch (error) {
+      console.error('Error deleting all tags:', error);
+      toast.error('Failed to delete all tags');
+    }
+  };
+
+  const handleDeleteAllPeople = async () => {
+    try {
+      const peopleCount = dbStats?.people || 0;
+
+      deleteAllPeople();
+
+      await loadDbStats();
+
+      toast.success(`Deleted ${peopleCount} people`);
+      setShowDeletePeopleConfirm(false);
+    } catch (error) {
+      console.error('Error deleting all people:', error);
+      toast.error('Failed to delete all people');
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -254,9 +307,20 @@ export function HistoryDashboard() {
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {/* Tasks */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
-                  Tasks
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 relative">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                    Tasks
+                  </div>
+                  {dbStats.tasks > 0 && (
+                    <button
+                      onClick={() => setShowDeleteTasksConfirm(true)}
+                      className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                      title="Delete all tasks"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
                 <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                   {dbStats.tasks}
@@ -267,9 +331,20 @@ export function HistoryDashboard() {
               </div>
 
               {/* Tags */}
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
-                  Tags
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 relative">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                    Tags
+                  </div>
+                  {dbStats.tags > 0 && (
+                    <button
+                      onClick={() => setShowDeleteTagsConfirm(true)}
+                      className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                      title="Delete all tags"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {dbStats.tags}
@@ -280,9 +355,20 @@ export function HistoryDashboard() {
               </div>
 
               {/* People */}
-              <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
-                <div className="text-xs text-cyan-600 dark:text-cyan-400 font-medium mb-1">
-                  People
+              <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4 relative">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs text-cyan-600 dark:text-cyan-400 font-medium">
+                    People
+                  </div>
+                  {dbStats.people > 0 && (
+                    <button
+                      onClick={() => setShowDeletePeopleConfirm(true)}
+                      className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                      title="Delete all people"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
                 <div className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">
                   {dbStats.people}
@@ -293,9 +379,20 @@ export function HistoryDashboard() {
               </div>
 
               {/* History */}
-              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-                <div className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">
-                  History
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 relative">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                    History
+                  </div>
+                  {dbStats.history > 0 && (
+                    <button
+                      onClick={() => handleClearHistoryOption('all')}
+                      className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                      title="Delete all history"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
                 <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
                   {dbStats.history}
@@ -306,9 +403,20 @@ export function HistoryDashboard() {
               </div>
 
               {/* Data Operations */}
-              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
-                <div className="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">
-                  Import/Export
+              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 relative">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                    Import/Export
+                  </div>
+                  {dbStats.dataOperations > 0 && (
+                    <button
+                      onClick={() => setShowClearOperationsConfirm(true)}
+                      className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                      title="Clear operations log"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
                 <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">
                   {dbStats.dataOperations}
@@ -566,6 +674,133 @@ export function HistoryDashboard() {
                 className="px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors"
               >
                 Clear Operations
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Tasks Confirmation Modal */}
+      {showDeleteTasksConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
+              <p className="text-sm text-red-800 dark:text-red-200 font-medium">
+                ⚠️ This action cannot be undone
+              </p>
+            </div>
+
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Delete All Tasks?
+            </h2>
+
+            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
+              <p className="font-medium">This will permanently delete:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li><strong>{dbStats?.tasks || 0}</strong> tasks (including all subtasks)</li>
+                <li><strong>{dbStats?.history || 0}</strong> history events</li>
+              </ul>
+              <p className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                Tags and People will be preserved but will have no associated tasks.
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteTasksConfirm(false)}
+                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAllTasks}
+                className="px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Delete All Tasks
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Tags Confirmation Modal */}
+      {showDeleteTagsConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
+              <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                ⚠️ This will remove tags from all tasks
+              </p>
+            </div>
+
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Delete All Tags?
+            </h2>
+
+            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
+              <p className="font-medium">This will permanently delete:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li><strong>{dbStats?.tags || 0}</strong> tags</li>
+              </ul>
+              <p className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                All tasks will have their tag associations removed. Tasks themselves will not be deleted.
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteTagsConfirm(false)}
+                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAllTags}
+                className="px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Delete All Tags
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All People Confirmation Modal */}
+      {showDeletePeopleConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
+              <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                ⚠️ This will remove people from all tasks
+              </p>
+            </div>
+
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Delete All People?
+            </h2>
+
+            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
+              <p className="font-medium">This will permanently delete:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li><strong>{dbStats?.people || 0}</strong> people</li>
+              </ul>
+              <p className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                All tasks will have their people associations removed. Tasks themselves will not be deleted.
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeletePeopleConfirm(false)}
+                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAllPeople}
+                className="px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Delete All People
               </button>
             </div>
           </div>

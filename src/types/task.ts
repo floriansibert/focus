@@ -85,6 +85,7 @@ export interface FilterState {
   selectedTags: string[];
   selectedPeople: string[];
   showCompleted: boolean;
+  showOverdueOnly: boolean;
   dateRange?: { start: Date; end: Date };
 }
 

@@ -123,7 +123,7 @@ Applied in `useTaskFilters` hook which returns filtered task array.
 ### Type System
 
 Key types in `src/types/`:
-- **task.ts**: Task, Tag, Person, TimeEntry, RecurrenceConfig, FilterState, QuadrantType, TaskType, HistoryEntry, DataOperation
+- **task.ts**: Task, Tag, Person, RecurrenceConfig, FilterState, QuadrantType, TaskType, HistoryEntry, DataOperation
 
 QuadrantType and TaskType use const object pattern for type-safe enums.
 
@@ -138,7 +138,7 @@ QuadrantType and TaskType use const object pattern for type-safe enums.
 ### ID Generation
 
 Simple timestamp + random string pattern: `Date.now()-${random}`
-Used consistently across tasks, tags, people, and time entries.
+Used consistently across tasks, tags, and people.
 
 ### IndexedDB Schema
 

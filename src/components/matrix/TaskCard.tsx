@@ -9,6 +9,7 @@ import { useUIStore } from '../../store/uiStore';
 import { Badge } from '../ui/Badge';
 import { PersonBadge } from '../ui/PersonBadge';
 import { SubtaskProgressPie } from '../ui/SubtaskProgressPie';
+import { DueDateQuickMenu } from '../task/DueDateQuickMenu';
 import { formatRecurrence } from '../../utils/date';
 import { isSubtask, canHaveSubtasks } from '../../utils/taskHelpers';
 
@@ -20,7 +21,7 @@ interface TaskCardProps {
 }
 
 export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, isSelected = false }: TaskCardProps) {
-  const { toggleComplete, deleteTask, addSubtask, toggleStar } = useTaskStore();
+  const { toggleComplete, deleteTask, addSubtask, toggleStar, updateTask } = useTaskStore();
   const { collapsedTasks, toggleTaskCollapse, startPomodoroWithTask } = useUIStore();
   const task = useTaskStore((state) => state.tasks.find((t) => t.id === taskId));
   const allTasks = useTaskStore((state) => state.tasks);
@@ -71,7 +72,17 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const isOverdue = task.dueDate && !task.completed && new Date(task.dueDate) < new Date();
+  const isOverdue = useMemo(() => {
+    if (!task.dueDate || task.completed) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dueDate = new Date(task.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+
+    return dueDate < today;
+  }, [task.dueDate, task.completed]);
 
   return (
     <div
@@ -222,9 +233,16 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
             ))}
             {/* Due Date - inline */}
             {task.dueDate && (
-              <span className={`text-xs ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-                {new Date(task.dueDate).toLocaleDateString()}
-              </span>
+              isOverdue ? (
+                <DueDateQuickMenu
+                  task={task}
+                  onDateChange={(newDate) => updateTask(task.id, { dueDate: newDate })}
+                />
+              ) : (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {new Date(task.dueDate).toLocaleDateString()}
+                </span>
+              )
             )}
           </div>
         </div>
