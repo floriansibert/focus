@@ -1,12 +1,21 @@
+import { useMemo } from 'react';
 import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { useTaskStore } from '../../store/taskStore';
+import { TaskType } from '../../types/task';
 import { generateInsights } from '../../lib/analytics';
 import { QuadrantDistribution } from './QuadrantDistribution';
 import { CompletionTrends } from './CompletionTrends';
 import { WeeklyCompletions } from './WeeklyCompletions';
 
 export function AnalyticsDashboard() {
-  const tasks = useTaskStore((state) => state.tasks);
+  const allTasks = useTaskStore((state) => state.tasks);
+
+  // Filter out RECURRING_PARENT templates - they're blueprints, not active tasks
+  const tasks = useMemo(
+    () => allTasks.filter((task) => task.taskType !== TaskType.RECURRING_PARENT),
+    [allTasks]
+  );
+
   const insights = generateInsights(tasks);
 
   const getInsightIcon = (type: string) => {

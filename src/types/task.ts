@@ -73,6 +73,7 @@ export interface Task {
   // Recurring
   isRecurring: boolean;
   recurrence?: RecurrenceConfig;
+  isPaused?: boolean; // Pause recurring instance generation
   parentTaskId?: string; // For recurring task instances
 
   // Metadata

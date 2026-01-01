@@ -235,9 +235,9 @@ export function Matrix() {
     // Build flat list of VISIBLE tasks in visual order
     const visibleTasks: Task[] = [];
 
-    // Get top-level tasks sorted by order
+    // Get top-level tasks sorted by order (exclude subtasks and templates)
     const topLevelTasks = tasks
-      .filter((t) => t.quadrant === focusedQuadrant && !isSubtask(t))
+      .filter((t) => t.quadrant === focusedQuadrant && !isSubtask(t) && t.taskType !== TaskType.RECURRING_PARENT)
       .sort((a, b) => a.order - b.order);
 
     // Build visible task list respecting hierarchy
@@ -300,9 +300,9 @@ export function Matrix() {
     >
       {focusedQuadrant ? (
         // FOCUS MODE: Split-screen layout
-        <div className="flex flex-col md:flex-row gap-4 p-4 h-[calc(100vh-73px)] animate-fadeIn">
+        <div className="flex flex-col md:flex-row md:items-start gap-4 p-4 animate-fadeIn">
           {/* Left: Quadrant (60% on desktop) */}
-          <div className="flex-1 md:flex-[3] overflow-y-auto">
+          <div className="flex-1 md:flex-[3]">
             <Quadrant
               type={focusedQuadrant}
               onAddTask={() => handleAddTask(focusedQuadrant)}
@@ -313,7 +313,7 @@ export function Matrix() {
 
           {/* Right: Detail Panel (40% on desktop) */}
           {isModalOpen && (
-            <div className="flex-1 md:flex-[2] overflow-y-auto">
+            <div className="flex-1 md:flex-[2] md:sticky md:top-4">
               <TaskSidePanel
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}

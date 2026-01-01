@@ -15,9 +15,9 @@ export function useRecurringTasks() {
     const checkRecurringTasks = () => {
       const now = new Date();
 
-      // Find all recurring parent tasks
+      // Find all recurring parent tasks (skip paused templates)
       const recurringTasks = tasks.filter(
-        (task) => task.isRecurring && task.recurrence && !task.parentTaskId
+        (task) => task.isRecurring && task.recurrence && !task.parentTaskId && !task.isPaused
       );
 
       for (const parentTask of recurringTasks) {

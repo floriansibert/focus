@@ -52,10 +52,18 @@ export function useExportReminder(): UseExportReminderResult {
       return false;
     }
 
-    // Check last dismissal
-    if (lastExportReminderDismissed && lastExport) {
-      // If dismissed after the last export, don't show until next interval
-      if (lastExportReminderDismissed > lastExport.timestamp) {
+    // Check last dismissal (works for both "never exported" and "exported before" cases)
+    if (lastExportReminderDismissed) {
+      if (lastExport) {
+        // If dismissed after the last export, don't show until next interval
+        if (lastExportReminderDismissed > lastExport.timestamp) {
+          const daysSinceDismissal = differenceInDays(new Date(), lastExportReminderDismissed);
+          if (daysSinceDismissal < exportReminderFrequencyDays) {
+            return false;
+          }
+        }
+      } else {
+        // Never exported - check dismissal date
         const daysSinceDismissal = differenceInDays(new Date(), lastExportReminderDismissed);
         if (daysSinceDismissal < exportReminderFrequencyDays) {
           return false;
@@ -63,7 +71,7 @@ export function useExportReminder(): UseExportReminderResult {
       }
     }
 
-    // Never exported - show reminder
+    // Never exported - show reminder (only if not recently dismissed)
     if (!lastExport) {
       return true;
     }

@@ -66,12 +66,18 @@ export function TaskSidePanel({
     : undefined;
 
   // Calculate subtask counts for completion indicator
+  // For templates, count instances instead of subtasks
+  const isTemplate = latestTask?.taskType === TaskType.RECURRING_PARENT;
+
   const subtaskCount = latestTask ? tasks.filter(
-    (t) => t.parentTaskId === latestTask.id && t.taskType === TaskType.SUBTASK
+    (t) => t.parentTaskId === latestTask.id &&
+           (isTemplate ? t.taskType === TaskType.RECURRING_INSTANCE : t.taskType === TaskType.SUBTASK)
   ).length : 0;
 
   const completedSubtaskCount = latestTask ? tasks.filter(
-    (t) => t.parentTaskId === latestTask.id && t.taskType === TaskType.SUBTASK && t.completed
+    (t) => t.parentTaskId === latestTask.id &&
+           (isTemplate ? t.taskType === TaskType.RECURRING_INSTANCE : t.taskType === TaskType.SUBTASK) &&
+           t.completed
   ).length : 0;
 
   // Handler for clicking on a subtask
@@ -346,7 +352,7 @@ export function TaskSidePanel({
   if (!isOpen) return null;
 
   return (
-    <div className="h-full max-h-screen flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+    <div className="max-h-[calc(100vh-6rem)] flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
 
       {/* Header with Close Button */}
       <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
@@ -449,6 +455,29 @@ export function TaskSidePanel({
           </div>
         </div>
 
+        {/* Star Status */}
+        <button
+          type="button"
+          onClick={() => {
+            if (task && latestTask) {
+              toggleStar(latestTask.id);
+            } else {
+              setIsStarred(!isStarred);
+            }
+          }}
+          className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          <Star
+            size={20}
+            className={`flex-shrink-0 ${
+              task ? (latestTask?.isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600') : (isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600')
+            }`}
+          />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {task ? (latestTask?.isStarred ? 'Starred' : 'Star this task') : (isStarred ? 'Starred' : 'Star this task')}
+          </span>
+        </button>
+
         {/* Completion Status */}
         <div className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
           {task && subtaskCount > 0 ? (
@@ -533,29 +562,6 @@ export function TaskSidePanel({
             </div>
           )}
         </div>
-
-        {/* Star Status */}
-        <button
-          type="button"
-          onClick={() => {
-            if (task && latestTask) {
-              toggleStar(latestTask.id);
-            } else {
-              setIsStarred(!isStarred);
-            }
-          }}
-          className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
-          <Star
-            size={20}
-            className={`flex-shrink-0 ${
-              task ? (latestTask?.isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600') : (isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600')
-            }`}
-          />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {task ? (latestTask?.isStarred ? 'Starred' : 'Star this task') : (isStarred ? 'Starred' : 'Star this task')}
-          </span>
-        </button>
 
         {/* Quadrant Selector */}
         {task && isSubtask(task) ? (
@@ -667,9 +673,9 @@ export function TaskSidePanel({
         {/* Subtask Management */}
         {(() => {
           // Only show subtasks section if:
-          // - In edit mode and task can have subtasks
+          // - In edit mode and task can have subtasks OR is a template (which has instances)
           // - In add mode (always allow adding subtasks to new tasks)
-          const showSubtasks = task ? canHaveSubtasks(task) : true;
+          const showSubtasks = task ? (canHaveSubtasks(task) || task.taskType === TaskType.RECURRING_PARENT) : true;
 
           if (!showSubtasks) return null;
 
@@ -687,7 +693,7 @@ export function TaskSidePanel({
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Subtasks
+                    {isTemplate ? 'Instances' : 'Subtasks'}
                   </span>
                   {subtaskCount > 0 && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">

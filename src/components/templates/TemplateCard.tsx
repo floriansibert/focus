@@ -1,5 +1,6 @@
-import { Repeat, Edit2, Eye, Trash2, Calendar, BarChart2, Star } from 'lucide-react';
+import { Repeat, Edit2, Eye, Trash2, Calendar, BarChart2, Star, Pause, Play } from 'lucide-react';
 import type { Task } from '../../types/task';
+import { QuadrantType } from '../../types/task';
 import { QUADRANT_INFO } from '../../types/quadrant';
 import { useTaskStore } from '../../store/taskStore';
 import { getTemplateStats } from '../../utils/templateHelpers';
@@ -12,9 +13,10 @@ interface TemplateCardProps {
   onEdit: (task: Task) => void;
   onViewInstances: (task: Task) => void;
   onDelete: (taskId: string) => void;
+  onTogglePause: (taskId: string) => void;
 }
 
-export function TemplateCard({ template, onEdit, onViewInstances, onDelete }: TemplateCardProps) {
+export function TemplateCard({ template, onEdit, onViewInstances, onDelete, onTogglePause }: TemplateCardProps) {
   const allTasks = useTaskStore((state) => state.tasks);
   const allTags = useTaskStore((state) => state.tags);
   const allPeople = useTaskStore((state) => state.people);
@@ -28,44 +30,44 @@ export function TemplateCard({ template, onEdit, onViewInstances, onDelete }: Te
 
   return (
     <div className="rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:shadow-md transition-shadow">
-      {/* Header - Template badge + Quadrant badge */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-medium">
-            <Repeat size={12} />
-            Template
+      {/* Header - Template badge + Quadrant + Title */}
+      <div className="flex items-start gap-2 mb-3">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-medium flex-shrink-0">
+          <Repeat size={12} />
+          Template
+        </span>
+        {template.isPaused && (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 text-xs font-medium flex-shrink-0">
+            <Pause size={12} />
+            Paused
           </span>
-          <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${quadrantInfo.color}`}>
-            {quadrantInfo.short}
-          </span>
-        </div>
+        )}
+        <span className={`inline-flex items-center px-2 py-1 rounded-md border-2 text-xs font-semibold flex-shrink-0 text-gray-900 dark:text-gray-100 ${quadrantInfo.color}`}>
+          {quadrantInfo.title}
+        </span>
+        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex-1 line-clamp-2">
+          {template.title}
+        </h3>
         {template.isStarred && (
-          <Star size={16} className="text-yellow-500 fill-yellow-500" />
+          <Star size={16} className="text-yellow-500 fill-yellow-500 flex-shrink-0" />
         )}
       </div>
 
-      {/* Title */}
-      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">
-        {template.title}
-      </h3>
-
-      {/* Recurrence Pattern */}
-      {template.recurrence && (
-        <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 mb-3">
-          <Repeat size={14} className="flex-shrink-0" />
-          <span>{formatRecurrenceDetailed(template.recurrence)}</span>
-        </div>
-      )}
-
-      {/* Stats Row */}
-      <div className="flex items-center gap-4 mb-3 text-sm">
-        <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+      {/* Recurrence Pattern & Stats Row */}
+      <div className="flex items-center gap-4 mb-3 text-sm text-gray-600 dark:text-gray-400">
+        {template.recurrence && (
+          <div className="flex items-center gap-1.5">
+            <Repeat size={14} className="flex-shrink-0" />
+            <span>{formatRecurrenceDetailed(template.recurrence)}</span>
+          </div>
+        )}
+        <div className="flex items-center gap-1.5">
           <Calendar size={14} className="flex-shrink-0" />
           <span className="font-medium">
             {formatNextOccurrence(stats.nextScheduledDate)}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+        <div className="flex items-center gap-1.5">
           <BarChart2 size={14} className="flex-shrink-0" />
           <span className="font-medium">
             {stats.totalInstances} {stats.totalInstances === 1 ? 'instance' : 'instances'}
@@ -101,6 +103,28 @@ export function TemplateCard({ template, onEdit, onViewInstances, onDelete }: Te
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
+        <button
+          onClick={() => onTogglePause(template.id)}
+          className={`
+            flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors
+            ${template.isPaused
+              ? 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+              : 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+            }
+          `}
+        >
+          {template.isPaused ? (
+            <>
+              <Play size={14} />
+              Resume
+            </>
+          ) : (
+            <>
+              <Pause size={14} />
+              Pause
+            </>
+          )}
+        </button>
         <button
           onClick={() => onEdit(template)}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"

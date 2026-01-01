@@ -19,6 +19,7 @@ interface TaskStore {
   moveTask: (id: string, toQuadrant: QuadrantType, newOrder: number) => void;
   toggleComplete: (id: string) => void;
   toggleStar: (id: string) => void;
+  toggleTemplatePause: (id: string) => void;
 
   // Subtask management
   addSubtask: (parentTaskId: string, subtaskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'quadrant' | 'taskType' | 'parentTaskId'>) => void;
@@ -286,6 +287,33 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       get().syncToDB();
     },
 
+    // Toggle template pause
+    toggleTemplatePause: (id) => {
+      const task = get().tasks.find((t) => t.id === id);
+      if (!task) return;
+
+      // Only allow pausing recurring parent templates
+      if (task.taskType !== TaskType.RECURRING_PARENT) {
+        return;
+      }
+
+      const willBePaused = !task.isPaused;
+
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                isPaused: willBePaused,
+                updatedAt: new Date(),
+              }
+            : t
+        ),
+      }));
+
+      get().syncToDB();
+    },
+
     // Add tag
     addTag: (tagData) => {
       const newTag: Tag = {
@@ -395,7 +423,23 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     },
 
     // Get all subtasks for a parent task
+    // For RECURRING_PARENT tasks, this returns RECURRING_INSTANCE children
+    // For other tasks, this returns SUBTASK children
     getSubtasks: (parentTaskId) => {
+      const parentTask = get().tasks.find((t) => t.id === parentTaskId);
+
+      if (!parentTask) {
+        return [];
+      }
+
+      // If parent is a recurring template, return instances
+      if (parentTask.taskType === TaskType.RECURRING_PARENT) {
+        return get().tasks.filter(
+          (t) => t.parentTaskId === parentTaskId && t.taskType === TaskType.RECURRING_INSTANCE
+        ).sort((a, b) => a.order - b.order);
+      }
+
+      // Otherwise, return subtasks
       return get().tasks.filter(
         (t) => t.parentTaskId === parentTaskId && t.taskType === TaskType.SUBTASK
       ).sort((a, b) => a.order - b.order);

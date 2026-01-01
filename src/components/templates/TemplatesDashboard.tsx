@@ -11,7 +11,7 @@ import type { Task } from '../../types/task';
 import toast from 'react-hot-toast';
 
 export function TemplatesDashboard() {
-  const { tasks, deleteTask } = useTaskStore();
+  const { tasks, deleteTask, toggleTemplatePause } = useTaskStore();
   const [selectedTemplate, setSelectedTemplate] = useState<Task | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewingInstancesFor, setViewingInstancesFor] = useState<Task | null>(null);
@@ -22,33 +22,8 @@ export function TemplatesDashboard() {
     [tasks]
   );
 
-  // Calculate summary statistics
-  const stats = useMemo(() => {
-    const totalInstances = tasks.filter(
-      (task) => task.taskType === TaskType.RECURRING_INSTANCE
-    ).length;
-
-    const activeInstances = tasks.filter(
-      (task) => task.taskType === TaskType.RECURRING_INSTANCE && !task.completed
-    ).length;
-
-    const completedInstances = tasks.filter(
-      (task) => task.taskType === TaskType.RECURRING_INSTANCE && task.completed
-    ).length;
-
-    const completionRate =
-      totalInstances > 0
-        ? Math.round((completedInstances / totalInstances) * 100)
-        : 0;
-
-    return {
-      totalTemplates: templates.length,
-      totalInstances,
-      activeInstances,
-      completedInstances,
-      completionRate,
-    };
-  }, [templates, tasks]);
+  // Template count
+  const templateCount = templates.length;
 
   const handleEdit = (template: Task) => {
     setSelectedTemplate(template);
@@ -82,6 +57,19 @@ export function TemplatesDashboard() {
         `Deleted template${instanceCount > 0 ? ` and ${instanceCount} instance${instanceCount === 1 ? '' : 's'}` : ''}`
       );
     }
+  };
+
+  const handleTogglePause = (templateId: string) => {
+    const template = templates.find((t) => t.id === templateId);
+    if (!template) return;
+
+    toggleTemplatePause(templateId);
+
+    toast.success(
+      template.isPaused
+        ? 'Template resumed - instances will generate on schedule'
+        : 'Template paused - no new instances will be created'
+    );
   };
 
   const handleCreateTemplate = () => {
@@ -137,47 +125,6 @@ export function TemplatesDashboard() {
         )}
       </div>
 
-      {/* Summary Statistics */}
-      {templates.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {stats.totalTemplates}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {stats.totalTemplates === 1 ? 'Template' : 'Templates'}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {stats.totalInstances}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Total Instances
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {stats.activeInstances}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Active
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {stats.completionRate}%
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Completion Rate
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Templates Grid or Empty State */}
       {templates.length === 0 ? (
         <EmptyState
@@ -198,6 +145,7 @@ export function TemplatesDashboard() {
               onEdit={handleEdit}
               onViewInstances={handleViewInstances}
               onDelete={handleDelete}
+              onTogglePause={handleTogglePause}
             />
           ))}
         </div>

@@ -227,6 +227,80 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                         )}
                       </div>
 
+                      {/* Tag Filters */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Filter by tags
+                        </label>
+                        {tags.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {[...tags].sort((a, b) => a.name.localeCompare(b.name)).map((tag) => {
+                              const isSelected = selectedTags.includes(tag.id);
+                              return (
+                                <button
+                                  key={tag.id}
+                                  type="button"
+                                  onClick={() => toggleTag(tag.id)}
+                                  className={`transition-all ${
+                                    isSelected ? 'scale-105' : 'opacity-60 hover:opacity-100'
+                                  }`}
+                                >
+                                  <Badge
+                                    color={tag.color}
+                                    className={`cursor-pointer ${
+                                      isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                                    }`}
+                                  >
+                                    {tag.name}
+                                  </Badge>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            No tags yet. Create tags when adding or editing tasks.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* People Filters */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Filter by people
+                        </label>
+                        {people.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {[...people].sort((a, b) => a.name.localeCompare(b.name)).map((person) => {
+                              const isSelected = selectedPeople.includes(person.id);
+                              return (
+                                <button
+                                  key={person.id}
+                                  type="button"
+                                  onClick={() => togglePerson(person.id)}
+                                  className={`transition-all ${
+                                    isSelected ? 'scale-105' : 'opacity-60 hover:opacity-100'
+                                  }`}
+                                >
+                                  <PersonBadge
+                                    color={person.color}
+                                    className={`cursor-pointer ${
+                                      isSelected ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-800' : ''
+                                    }`}
+                                  >
+                                    {person.name}
+                                  </PersonBadge>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            No people yet. Create people when adding or editing tasks.
+                          </p>
+                        )}
+                      </div>
+
                       {/* Show Completed Toggle */}
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -271,72 +345,6 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                               ? `Showing completed tasks from ${new Date(completedTasksCutoffDate).toLocaleDateString()} onwards`
                               : 'Showing all completed tasks'}
                           </p>
-                        </div>
-                      )}
-
-                      {/* Tag Filters */}
-                      {tags.length > 0 && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Filter by tags
-                          </label>
-                          <div className="flex flex-wrap gap-2">
-                            {[...tags].sort((a, b) => a.name.localeCompare(b.name)).map((tag) => {
-                              const isSelected = selectedTags.includes(tag.id);
-                              return (
-                                <button
-                                  key={tag.id}
-                                  type="button"
-                                  onClick={() => toggleTag(tag.id)}
-                                  className={`transition-all ${
-                                    isSelected ? 'scale-105' : 'opacity-60 hover:opacity-100'
-                                  }`}
-                                >
-                                  <Badge
-                                    color={tag.color}
-                                    className={`cursor-pointer ${
-                                      isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-                                    }`}
-                                  >
-                                    {tag.name}
-                                  </Badge>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* People Filters */}
-                      {people.length > 0 && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Filter by people
-                          </label>
-                          <div className="flex flex-wrap gap-2">
-                            {[...people].sort((a, b) => a.name.localeCompare(b.name)).map((person) => {
-                              const isSelected = selectedPeople.includes(person.id);
-                              return (
-                                <button
-                                  key={person.id}
-                                  type="button"
-                                  onClick={() => togglePerson(person.id)}
-                                  className={`transition-all ${
-                                    isSelected ? 'scale-105' : 'opacity-60 hover:opacity-100'
-                                  }`}
-                                >
-                                  <PersonBadge
-                                    color={person.color}
-                                    className={`cursor-pointer ${
-                                      isSelected ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-800' : ''
-                                    }`}
-                                  >
-                                    {person.name}
-                                  </PersonBadge>
-                                </button>
-                              );
-                            })}
-                          </div>
                         </div>
                       )}
 
