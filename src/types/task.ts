@@ -105,6 +105,8 @@ const HistoryActionTypeValues = {
   TASK_STARRED: 'task_starred',
   TASK_UNSTARRED: 'task_unstarred',
   SUBTASK_ADDED: 'subtask_added',
+  SUBTASK_REPARENTED: 'subtask_reparented',
+  SUBTASK_DETACHED: 'subtask_detached',
   PARENT_AUTO_COMPLETED: 'parent_auto_completed',
   PARENT_AUTO_UNCOMPLETED: 'parent_auto_uncompleted',
 } as const;
@@ -136,6 +138,12 @@ export interface HistoryEntry {
   // For moves: track quadrant change
   fromQuadrant?: QuadrantType;
   toQuadrant?: QuadrantType;
+
+  // For subtask reparenting: track parent change
+  oldParentId?: string;
+  oldParentTitle?: string;
+  newParentId?: string;
+  newParentTitle?: string;
 
   // Metadata
   undoCorrelationId?: string;  // To track undo operations

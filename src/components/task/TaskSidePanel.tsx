@@ -1,18 +1,21 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, ArrowRight, ChevronDown, Check, Star, Plus } from 'lucide-react';
+import { X, ArrowRight, ChevronDown, Check, Star, Plus, CornerDownRight } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { DatePicker } from '../ui/DatePicker';
 import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
 import { TagSelector } from './TagSelector';
 import { PeopleSelector } from './PeopleSelector';
 import { RecurringTaskConfig } from './RecurringTaskConfig';
 import { SubtaskList } from './SubtaskList';
 import { SubtaskProgressPie } from '../ui/SubtaskProgressPie';
+import { ParentSelectorModal } from './ParentSelectorModal';
 import { QuadrantType, TaskType, type Task, type RecurrenceConfig } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
 import { QUADRANT_INFO } from '../../types/quadrant';
 import { isSubtask, canHaveSubtasks, hasSubtasks } from '../../utils/taskHelpers';
 import { useUIStore } from '../../store/uiStore';
+import toast from 'react-hot-toast';
 
 interface TaskSidePanelProps {
   isOpen: boolean;
@@ -31,7 +34,7 @@ export function TaskSidePanel({
   onEditTask,
   onNavigate,
 }: TaskSidePanelProps) {
-  const { addTask, updateTask, toggleComplete, toggleStar, tasks, addSubtask } = useTaskStore();
+  const { addTask, updateTask, toggleComplete, toggleStar, tasks, addSubtask, moveSubtaskToParent, detachSubtask } = useTaskStore();
   const { toggleTaskCollapse, collapsedTasks } = useUIStore();
 
   const [title, setTitle] = useState('');
@@ -52,6 +55,7 @@ export function TaskSidePanel({
   const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
   const [pendingSubtasks, setPendingSubtasks] = useState<Array<{ title: string }>>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [isParentSelectorOpen, setIsParentSelectorOpen] = useState(false);
 
   // Get the latest task data from store (to reflect real-time updates like completion status)
   const latestTask = task ? tasks.find((t) => t.id === task.id) || task : task;
@@ -195,6 +199,35 @@ export function TaskSidePanel({
   const handleRemovePendingSubtask = useCallback((index: number) => {
     setPendingSubtasks(pendingSubtasks.filter((_, i) => i !== index));
   }, [pendingSubtasks]);
+
+  // Handler for detaching subtask
+  const handleDetachSubtask = useCallback(() => {
+    if (!latestTask) return;
+
+    try {
+      detachSubtask(latestTask.id);
+      toast.success(`"${latestTask.title}" converted to standalone task`);
+      onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to detach subtask');
+    }
+  }, [latestTask, detachSubtask, onClose]);
+
+  // Handler for selecting new parent
+  const handleSelectNewParent = useCallback((newParentId: string) => {
+    if (!latestTask) return;
+
+    const newParent = tasks.find((t) => t.id === newParentId);
+    if (!newParent) return;
+
+    try {
+      moveSubtaskToParent(latestTask.id, newParentId);
+      toast.success(`Moved "${latestTask.title}" to "${newParent.title}"`);
+      setIsParentSelectorOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to move subtask');
+    }
+  }, [latestTask, tasks, moveSubtaskToParent]);
 
   const validate = useCallback(() => {
     const newErrors: { title?: string } = {};
@@ -571,6 +604,47 @@ export function TaskSidePanel({
           </div>
         )}
 
+        {/* Parent Task Management (for subtasks only) */}
+        {task && latestTask && isSubtask(latestTask) && parentTask && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Parent Task
+            </label>
+
+            <div className="flex items-center gap-2">
+              {/* Current parent display */}
+              <div className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
+                <div className="flex items-center gap-2">
+                  <CornerDownRight size={14} className="text-gray-400" />
+                  <span className="text-sm text-gray-900 dark:text-gray-100">
+                    {parentTask.title}
+                  </span>
+                  <Badge color={QUADRANT_INFO[parentTask.quadrant].color} size="sm">
+                    {QUADRANT_INFO[parentTask.quadrant].shortLabel}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsParentSelectorOpen(true)}
+              >
+                Change Parent
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleDetachSubtask}
+              >
+                Convert to Task
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Subtask Management */}
         {(() => {
           // Only show subtasks section if:
@@ -708,6 +782,17 @@ export function TaskSidePanel({
           {task ? 'Save' : 'Add Task'}
         </Button>
       </div>
+
+      {/* Parent Selector Modal */}
+      {task && latestTask && isSubtask(latestTask) && parentTask && (
+        <ParentSelectorModal
+          isOpen={isParentSelectorOpen}
+          onClose={() => setIsParentSelectorOpen(false)}
+          subtaskId={latestTask.id}
+          currentParentId={parentTask.id}
+          onSelectParent={handleSelectNewParent}
+        />
+      )}
     </div>
   );
 }

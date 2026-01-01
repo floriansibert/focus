@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Task, Tag, Person, QuadrantType } from '../types/task';
 import { TaskType } from '../types/task';
 import { storageManager } from '../lib/storage';
-import { canHaveSubtasks, areAllSubtasksCompleted, getLatestSubtaskCompletionDate, hasSubtasks } from '../utils/taskHelpers';
+import { canHaveSubtasks, areAllSubtasksCompleted, getLatestSubtaskCompletionDate, hasSubtasks, isSubtask } from '../utils/taskHelpers';
 import { historyLogger } from '../lib/historyLogger';
 
 interface TaskStore {
@@ -26,6 +26,8 @@ interface TaskStore {
   deleteTaskWithSubtasks: (id: string) => { hasSubtasks: boolean; subtaskCount: number };
   moveTaskWithSubtasks: (id: string, toQuadrant: QuadrantType, newOrder: number) => void;
   reorderSubtasks: (parentTaskId: string, subtaskIds: string[]) => void;
+  moveSubtaskToParent: (subtaskId: string, newParentId: string) => void;
+  detachSubtask: (subtaskId: string) => void;
 
   // Tag management
   addTag: (tag: Omit<Tag, 'id'>) => void;
@@ -489,6 +491,131 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     syncToDB: () => {
       const { tasks, tags, people } = get();
       storageManager.debouncedSync({ tasks, tags, people });
+    },
+
+    // Move subtask to a different parent
+    moveSubtaskToParent: (subtaskId, newParentId) => {
+      const allTasks = get().tasks;
+      const subtask = allTasks.find((t) => t.id === subtaskId);
+      const newParent = allTasks.find((t) => t.id === newParentId);
+
+      // Validation
+      if (!subtask || !isSubtask(subtask)) {
+        throw new Error('Invalid subtask');
+      }
+
+      if (!newParent) {
+        throw new Error('New parent not found');
+      }
+
+      if (!canHaveSubtasks(newParent)) {
+        throw new Error(`Cannot add subtasks to ${newParent.taskType} tasks`);
+      }
+
+      if (subtaskId === newParentId) {
+        throw new Error('Cannot move subtask to itself');
+      }
+
+      // Future-proofing: prevent moving subtask that has its own subtasks
+      if (hasSubtasks(subtask, allTasks)) {
+        throw new Error('Cannot reparent subtask with its own subtasks');
+      }
+
+      // Store old parent for cleanup
+      const oldParentId = subtask.parentTaskId;
+      const oldParent = oldParentId ? allTasks.find((t) => t.id === oldParentId) : undefined;
+
+      // Calculate new order (append to end of new parent's subtask list)
+      const newParentSubtasks = allTasks.filter(
+        (t) => t.parentTaskId === newParentId && t.taskType === TaskType.SUBTASK
+      );
+      const newOrder = newParentSubtasks.length;
+
+      // Update subtask (atomic)
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === subtaskId
+            ? {
+                ...t,
+                parentTaskId: newParentId,
+                quadrant: newParent.quadrant, // Inherit from new parent
+                order: newOrder,
+                updatedAt: new Date(),
+              }
+            : t
+        ),
+      }));
+
+      // Update both parents' completion status
+      if (oldParentId) {
+        get().updateParentCompletionStatus(oldParentId);
+      }
+      get().updateParentCompletionStatus(newParentId);
+
+      // Sync to database
+      get().syncToDB();
+
+      // Log event
+      const updatedSubtask = get().tasks.find((t) => t.id === subtaskId);
+      if (updatedSubtask && oldParent) {
+        historyLogger.logSubtaskReparented(updatedSubtask, oldParent, newParent);
+      }
+    },
+
+    // Detach subtask to become a standalone task
+    detachSubtask: (subtaskId) => {
+      const allTasks = get().tasks;
+      const subtask = allTasks.find((t) => t.id === subtaskId);
+
+      // Validation
+      if (!subtask || !isSubtask(subtask)) {
+        throw new Error('Invalid subtask');
+      }
+
+      // Future-proofing: prevent detaching subtask that has its own subtasks
+      if (hasSubtasks(subtask, allTasks)) {
+        throw new Error('Cannot detach subtask with its own subtasks');
+      }
+
+      // Store old parent and current quadrant
+      const oldParentId = subtask.parentTaskId;
+      const oldParent = oldParentId ? allTasks.find((t) => t.id === oldParentId) : undefined;
+      const currentQuadrant = subtask.quadrant;
+
+      // Calculate new order (append to end of target quadrant)
+      const quadrantTasks = allTasks.filter(
+        (t) => t.quadrant === currentQuadrant && !t.parentTaskId
+      );
+      const newOrder = quadrantTasks.length;
+
+      // Update subtask (atomic)
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === subtaskId
+            ? {
+                ...t,
+                taskType: TaskType.STANDARD,
+                parentTaskId: undefined,
+                order: newOrder,
+                updatedAt: new Date(),
+              }
+            : t
+        ),
+      }));
+
+      // Update old parent's completion status
+      if (oldParentId) {
+        get().updateParentCompletionStatus(oldParentId);
+      }
+
+      // Sync to database
+      get().syncToDB();
+
+      // Log event
+      const updatedTask = get().tasks.find((t) => t.id === subtaskId);
+      if (updatedTask && oldParent) {
+        historyLogger.logSubtaskDetached(updatedTask, oldParent, currentQuadrant);
+      }
     },
 
     // Update parent task completion based on subtask status

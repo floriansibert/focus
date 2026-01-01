@@ -18,10 +18,10 @@ import { Quadrant } from './Quadrant';
 import { TaskCard } from './TaskCard';
 import { TaskModal } from '../task/TaskModal';
 import { TaskSidePanel } from '../task/TaskSidePanel';
-import { isSubtask } from '../../utils/taskHelpers';
+import { isSubtask, canHaveSubtasks } from '../../utils/taskHelpers';
 
 export function Matrix() {
-  const { tasks, moveTask, moveTaskWithSubtasks, reorderSubtasks, toggleStar, isLoading } = useTaskStore();
+  const { tasks, moveTask, moveTaskWithSubtasks, reorderSubtasks, moveSubtaskToParent, toggleStar, isLoading } = useTaskStore();
   const focusedQuadrant = useUIStore((state) => state.focusedQuadrant);
   const collapsedTasks = useUIStore((state) => state.collapsedTasks);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -114,11 +114,11 @@ export function Matrix() {
       return;
     }
 
-    // Handle subtask reordering
+    // Handle subtask reordering and reparenting
     if (isSubtask(draggedTask)) {
       const overTask = tasks.find((t) => t.id === over.id);
 
-      // Only allow reordering within same parent
+      // Case 1: Reordering within same parent (existing behavior)
       if (overTask && overTask.parentTaskId === draggedTask.parentTaskId) {
         const parentTaskId = draggedTask.parentTaskId!;
         const subtasks = tasks
@@ -132,9 +132,19 @@ export function Matrix() {
           const reorderedSubtasks = arrayMove(subtasks, oldIndex, newIndex);
           reorderSubtasks(parentTaskId, reorderedSubtasks.map(s => s.id));
         }
-      } else {
-        // Attempting to move subtask to different parent or parent task
-        toast.error('Subtasks can only be reordered within their parent task');
+      }
+      // Case 2: Dropping on a different parent task (NEW - reparenting)
+      else if (overTask && canHaveSubtasks(overTask) && overTask.id !== draggedTask.parentTaskId) {
+        try {
+          moveSubtaskToParent(draggedTaskId, overTask.id);
+          toast.success(`Moved "${draggedTask.title}" to "${overTask.title}"`);
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'Failed to move subtask');
+        }
+      }
+      // Case 3: Invalid drop target
+      else {
+        toast.error('Drop on a parent task to reparent, or reorder within current parent');
       }
 
       setActiveId(null);

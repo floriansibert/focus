@@ -223,6 +223,54 @@ class HistoryLogger {
     this.clearUndoCorrelation();
   }
 
+  // Log subtask reparented
+  async logSubtaskReparented(
+    subtask: Task,
+    oldParent: Task,
+    newParent: Task
+  ): Promise<void> {
+    const entry: Omit<HistoryEntry, 'id'> = {
+      timestamp: new Date(),
+      action: 'subtask_reparented',
+      taskId: subtask.id,
+      taskTitle: subtask.title,
+      taskQuadrant: newParent.quadrant,
+      oldParentId: oldParent.id,
+      oldParentTitle: oldParent.title,
+      newParentId: newParent.id,
+      newParentTitle: newParent.title,
+      fromQuadrant: oldParent.quadrant !== newParent.quadrant ? oldParent.quadrant : undefined,
+      toQuadrant: oldParent.quadrant !== newParent.quadrant ? newParent.quadrant : undefined,
+      undoCorrelationId: this.pendingUndo || undefined,
+    };
+
+    await db.history.add(entry);
+    this.clearUndoCorrelation();
+  }
+
+  // Log subtask detached
+  async logSubtaskDetached(
+    subtask: Task,
+    oldParent: Task,
+    newQuadrant: QuadrantType
+  ): Promise<void> {
+    const entry: Omit<HistoryEntry, 'id'> = {
+      timestamp: new Date(),
+      action: 'subtask_detached',
+      taskId: subtask.id,
+      taskTitle: subtask.title,
+      taskQuadrant: newQuadrant,
+      oldParentId: oldParent.id,
+      oldParentTitle: oldParent.title,
+      fromQuadrant: oldParent.quadrant !== newQuadrant ? oldParent.quadrant : undefined,
+      toQuadrant: oldParent.quadrant !== newQuadrant ? newQuadrant : undefined,
+      undoCorrelationId: this.pendingUndo || undefined,
+    };
+
+    await db.history.add(entry);
+    this.clearUndoCorrelation();
+  }
+
   // Remove undo events when user performs undo
   async removeUndoEvents(correlationId: string): Promise<void> {
     const entries = await db.history
