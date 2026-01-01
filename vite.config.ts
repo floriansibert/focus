@@ -10,4 +10,7 @@ export default defineConfig({
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     __APP_AUTHOR__: JSON.stringify('Florian Sibert'),
   },
+  server: {
+    host: true, // Allow access from network
+  },
 })
