@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { History, Trash2, HardDrive, Database, ChevronDown } from 'lucide-react';
 import { useEventHistoryStore } from '../../store/eventHistoryStore';
 import { useTaskStore } from '../../store/taskStore';
@@ -22,7 +22,11 @@ interface DatabaseStats {
 }
 
 export function HistoryDashboard() {
-  const { loadEvents, isLoading, getEventsByDate, getFilteredEvents, events } = useEventHistoryStore();
+  const loadEvents = useEventHistoryStore((state) => state.loadEvents);
+  const isLoading = useEventHistoryStore((state) => state.isLoading);
+  const getEventsByDate = useEventHistoryStore((state) => state.getEventsByDate);
+  const getFilteredEvents = useEventHistoryStore((state) => state.getFilteredEvents);
+  const events = useEventHistoryStore((state) => state.events);
   const { tasks, updateTask, deleteAllTasks, deleteAllTags, deleteAllPeople } = useTaskStore();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -39,7 +43,7 @@ export function HistoryDashboard() {
   const [showDeletePeopleConfirm, setShowDeletePeopleConfirm] = useState(false);
   const clearHistoryDropdownRef = useRef<HTMLDivElement>(null);
 
-  const loadDataOperations = async () => {
+  const loadDataOperations = useCallback(async () => {
     try {
       // Load one extra to check if there are more
       const operations = await dataOperationLogger.getRecentOperations(operationsLimit + 1);
@@ -54,9 +58,9 @@ export function HistoryDashboard() {
     } catch (error) {
       console.error('Error loading data operations:', error);
     }
-  };
+  }, [operationsLimit]);
 
-  const loadDbStats = async () => {
+  const loadDbStats = useCallback(async () => {
     try {
       const [taskCount, tagCount, peopleCount, historyCount, operationsCount] = await Promise.all([
         db.tasks.count(),
@@ -89,7 +93,7 @@ export function HistoryDashboard() {
     } catch (error) {
       console.error('Error loading database stats:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Always load fresh events when the History view is opened
