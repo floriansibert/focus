@@ -17,10 +17,11 @@ interface QuadrantProps {
   type: QuadrantType;
   onAddTask: () => void;
   onEditTask: (task: Task) => void;
+  onAddSubtask?: (parentTask: Task) => void;
   selectedTaskId?: string;
 }
 
-export const Quadrant = memo(function Quadrant({ type, onAddTask, onEditTask, selectedTaskId }: QuadrantProps) {
+export const Quadrant = memo(function Quadrant({ type, onAddTask, onEditTask, onAddSubtask, selectedTaskId }: QuadrantProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: type,
     data: { quadrant: type },
@@ -103,6 +104,7 @@ export const Quadrant = memo(function Quadrant({ type, onAddTask, onEditTask, se
                   <TaskCard
                     taskId={task.id}
                     onEdit={onEditTask}
+                    onAddSubtask={onAddSubtask}
                     isSelected={selectedTaskId === task.id}
                   />
 

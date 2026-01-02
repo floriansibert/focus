@@ -23,10 +23,11 @@ interface TaskModalProps {
   onClose: () => void;
   task?: Task;
   defaultQuadrant?: QuadrantType;
+  defaultParentTaskId?: string;
   onEditTask?: (task: Task) => void;
 }
 
-export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParentTaskId, onEditTask }: TaskModalProps) {
   const { addTask, updateTask, toggleComplete, toggleStar, tasks, addSubtask, moveSubtaskToParent, detachSubtask } = useTaskStore();
 
   const [title, setTitle] = useState('');
@@ -53,9 +54,11 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
   // Get the latest task data from store (to reflect real-time updates like completion status)
   const latestTask = task ? tasks.find((t) => t.id === task.id) || task : task;
 
-  // Get parent task if this is a subtask
+  // Get parent task if this is a subtask, or if we're creating a new subtask
   const parentTask = latestTask && latestTask.parentTaskId
     ? tasks.find((t) => t.id === latestTask.parentTaskId)
+    : defaultParentTaskId
+    ? tasks.find((t) => t.id === defaultParentTaskId)
     : undefined;
 
   // Calculate subtask counts for completion indicator
@@ -72,6 +75,16 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
     if (onEditTask) {
       onClose();  // Close current modal
       setTimeout(() => onEditTask(subtask), 100);  // Open subtask in new modal
+    }
+  };
+
+  // Handler for when a new subtask is created
+  const handleSubtaskCreated = (subtaskId: string) => {
+    const currentTasks = useTaskStore.getState().tasks;
+    const newSubtask = currentTasks.find((t) => t.id === subtaskId);
+    if (newSubtask && onEditTask) {
+      onClose();  // Close current modal
+      setTimeout(() => onEditTask(newSubtask), 100);  // Open subtask in new modal
     }
   };
 
@@ -248,10 +261,24 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
         isRecurring,
         recurrence: isRecurring ? recurrence : undefined,
       });
+    } else if (defaultParentTaskId) {
+      // Create new subtask
+      const trimmedTitle = title.trim();
+      addSubtask(defaultParentTaskId, {
+        title: trimmedTitle,
+        description: description.trim() || undefined,
+        dueDate,
+        completed,
+        completedAt: completed ? (completedAt || new Date()) : undefined,
+        tags: selectedTags,
+        people: selectedPeople,
+        isRecurring: false,
+        order: 0,
+      });
     } else {
       // Create new task
       const trimmedTitle = title.trim();
-      addTask({
+      const newTaskId = addTask({
         title: trimmedTitle,
         description: description.trim() || undefined,
         quadrant,
@@ -269,34 +296,24 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
 
       // Create subtasks if any were added
       if (pendingSubtasks.length > 0) {
-        // Get the latest tasks from store (addTask is synchronous in Zustand)
-        const currentTasks = useTaskStore.getState().tasks;
-
-        // Find the newly created task (most recent task with matching title and quadrant)
-        const newParentTask = currentTasks
-          .filter((t) => t.title === trimmedTitle && t.quadrant === quadrant)
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-
-        if (newParentTask) {
-          // Create each subtask
-          pendingSubtasks.forEach((subtask) => {
-            addSubtask(newParentTask.id, {
-              title: subtask.title,
-              description: undefined,
-              dueDate: undefined,
-              tags: [],
-              people: [],
-              isRecurring: false,
-              completed: false,
-              order: 0,
-            });
+        // Create each subtask using the new task ID
+        pendingSubtasks.forEach((subtask) => {
+          addSubtask(newTaskId, {
+            title: subtask.title,
+            description: undefined,
+            dueDate: undefined,
+            tags: [],
+            people: [],
+            isRecurring: false,
+            completed: false,
+            order: 0,
           });
-        }
+        });
       }
     }
 
     onClose();
-  }, [validate, task, updateTask, addTask, title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, completed, completedAt, isStarred, pendingSubtasks, addSubtask, onClose]);
+  }, [validate, task, updateTask, addTask, title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, completed, completedAt, isStarred, pendingSubtasks, addSubtask, onClose, defaultParentTaskId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -323,10 +340,10 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
     >
       <div className="space-y-4" onKeyDown={handleKeyDown}>
         {/* Parent Task Info (for subtasks) */}
-        {task && latestTask && isSubtask(latestTask) && parentTask && (
+        {((task && latestTask && isSubtask(latestTask)) || defaultParentTaskId) && parentTask && (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-900 dark:text-blue-100">
-              This is a subtask of: <strong>{parentTask.title}</strong>
+              {defaultParentTaskId && !task ? 'Adding subtask to: ' : 'This is a subtask of: '}<strong>{parentTask.title}</strong>
             </p>
             <button
               onClick={() => onEditTask?.(parentTask)}
@@ -641,8 +658,8 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
         {(() => {
           // Only show subtasks section if:
           // - In edit mode and task can have subtasks
-          // - In add mode (always allow adding subtasks to new tasks)
-          const showSubtasks = task ? canHaveSubtasks(task) : true;
+          // - In add mode: only if we're not creating a subtask (no nested subtasks)
+          const showSubtasks = task ? canHaveSubtasks(task) : !defaultParentTaskId;
 
           if (!showSubtasks) return null;
 
@@ -681,7 +698,11 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
                 <div className="mt-2 animate-fadeIn">
                   {task ? (
                     // Edit mode: Show SubtaskList component
-                    <SubtaskList parentTaskId={task.id} onSubtaskClick={handleSubtaskClick} />
+                    <SubtaskList
+                      parentTaskId={task.id}
+                      onSubtaskClick={handleSubtaskClick}
+                      onSubtaskCreated={handleSubtaskCreated}
+                    />
                   ) : (
                     // Add mode: Show pending subtasks UI
                     <div className="space-y-2">

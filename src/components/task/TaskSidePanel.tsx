@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { X, ArrowRight, ChevronDown, Check, Star, Plus, CornerDownRight } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { DatePicker } from '../ui/DatePicker';
@@ -22,6 +22,7 @@ interface TaskSidePanelProps {
   onClose: () => void;
   task?: Task;
   defaultQuadrant?: QuadrantType;
+  defaultParentTaskId?: string;
   onEditTask?: (task: Task) => void;
   onNavigate?: (direction: 'up' | 'down') => void;
 }
@@ -31,6 +32,7 @@ export function TaskSidePanel({
   onClose,
   task,
   defaultQuadrant,
+  defaultParentTaskId,
   onEditTask,
   onNavigate,
 }: TaskSidePanelProps) {
@@ -57,12 +59,17 @@ export function TaskSidePanel({
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [isParentSelectorOpen, setIsParentSelectorOpen] = useState(false);
 
+  // Ref for title input to enable auto-focus
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
   // Get the latest task data from store (to reflect real-time updates like completion status)
   const latestTask = task ? tasks.find((t) => t.id === task.id) || task : task;
 
-  // Get parent task if this is a subtask
+  // Get parent task if this is a subtask, or if we're creating a new subtask
   const parentTask = latestTask && latestTask.parentTaskId
     ? tasks.find((t) => t.id === latestTask.parentTaskId)
+    : defaultParentTaskId
+    ? tasks.find((t) => t.id === defaultParentTaskId)
     : undefined;
 
   // Calculate subtask counts for completion indicator
@@ -85,6 +92,15 @@ export function TaskSidePanel({
     if (onEditTask) {
       onClose();  // Close current panel
       setTimeout(() => onEditTask(subtask), 100);  // Open subtask in new panel
+    }
+  };
+
+  // Handler for newly created subtask
+  const handleSubtaskCreated = (subtaskId: string) => {
+    const tasks = useTaskStore.getState().tasks;
+    const newSubtask = tasks.find((t) => t.id === subtaskId);
+    if (newSubtask && onEditTask) {
+      onEditTask(newSubtask);
     }
   };
 
@@ -127,14 +143,30 @@ export function TaskSidePanel({
     }
   }, [isOpen, task, defaultQuadrant]);
 
-  // Auto-expand subtasks if task has subtasks (separate effect to avoid form reset issues)
+  // Auto-expand subtasks if task can have subtasks (separate effect to avoid form reset issues)
   useEffect(() => {
-    if (isOpen && task) {
-      const hasSubtasks = tasks.some((t) => t.parentTaskId === task.id);
+    if (isOpen && task && canHaveSubtasks(task)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsSubtasksExpanded(hasSubtasks);
+      setIsSubtasksExpanded(true);
     }
-  }, [isOpen, task, tasks]);
+  }, [isOpen, task]);
+
+  // Auto-focus title input when panel opens or task changes
+  useEffect(() => {
+    if (isOpen && titleInputRef.current) {
+      // Small delay to ensure the panel is fully rendered
+      const timeoutId = setTimeout(() => {
+        const input = titleInputRef.current;
+        if (input) {
+          input.focus();
+          // Move cursor to end of text
+          const length = input.value.length;
+          input.setSelectionRange(length, length);
+        }
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOpen, task?.id]);
 
   // Compute form changes (derived state)
   const hasChanges = useMemo(() => {
@@ -261,10 +293,31 @@ export function TaskSidePanel({
         isRecurring,
         recurrence: isRecurring ? recurrence : undefined,
       });
+    } else if (defaultParentTaskId) {
+      // Create new subtask
+      const trimmedTitle = title.trim();
+      const newSubtaskId = addSubtask(defaultParentTaskId, {
+        title: trimmedTitle,
+        description: description.trim() || undefined,
+        dueDate,
+        completed,
+        completedAt: completed ? (completedAt || new Date()) : undefined,
+        tags: selectedTags,
+        people: selectedPeople,
+        isRecurring: false,
+        order: 0,
+      });
+
+      // Auto-select the newly created subtask
+      const currentTasks = useTaskStore.getState().tasks;
+      const createdSubtask = currentTasks.find((t) => t.id === newSubtaskId);
+      if (createdSubtask && onEditTask) {
+        onEditTask(createdSubtask);
+      }
     } else {
       // Create new task
       const trimmedTitle = title.trim();
-      addTask({
+      const newTaskId = addTask({
         title: trimmedTitle,
         description: description.trim() || undefined,
         quadrant,
@@ -282,32 +335,29 @@ export function TaskSidePanel({
 
       // Create subtasks if any were added
       if (pendingSubtasks.length > 0) {
-        // Get the latest tasks from store (addTask is synchronous in Zustand)
-        const currentTasks = useTaskStore.getState().tasks;
-
-        // Find the newly created task (most recent task with matching title and quadrant)
-        const newParentTask = currentTasks
-          .filter((t) => t.title === trimmedTitle && t.quadrant === quadrant)
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-
-        if (newParentTask) {
-          // Create each subtask
-          pendingSubtasks.forEach((subtask) => {
-            addSubtask(newParentTask.id, {
-              title: subtask.title,
-              description: undefined,
-              dueDate: undefined,
-              tags: [],
-              people: [],
-              isRecurring: false,
-              completed: false,
-              order: 0,
-            });
+        // Create each subtask using the new task ID
+        pendingSubtasks.forEach((subtask) => {
+          addSubtask(newTaskId, {
+            title: subtask.title,
+            description: undefined,
+            dueDate: undefined,
+            tags: [],
+            people: [],
+            isRecurring: false,
+            completed: false,
+            order: 0,
           });
-        }
+        });
+      }
+
+      // Auto-select the newly created task
+      const currentTasks = useTaskStore.getState().tasks;
+      const createdTask = currentTasks.find((t) => t.id === newTaskId);
+      if (createdTask && onEditTask) {
+        onEditTask(createdTask);
       }
     }
-  }, [validate, task, updateTask, addTask, title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, completed, completedAt, isStarred, pendingSubtasks, addSubtask]);
+  }, [validate, task, updateTask, addTask, title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, completed, completedAt, isStarred, pendingSubtasks, addSubtask, onEditTask, defaultParentTaskId]);
 
   // Arrow key navigation
   useEffect(() => {
@@ -372,10 +422,10 @@ export function TaskSidePanel({
       {/* Form Content */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {/* Parent Task Info (for subtasks) */}
-        {task && latestTask && isSubtask(latestTask) && parentTask && (
+        {((task && latestTask && isSubtask(latestTask)) || defaultParentTaskId) && parentTask && (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-900 dark:text-blue-100">
-              This is a subtask of: <strong>{parentTask.title}</strong>
+              {defaultParentTaskId && !task ? 'Adding subtask to: ' : 'This is a subtask of: '}<strong>{parentTask.title}</strong>
             </p>
             <button
               onClick={() => onEditTask?.(parentTask)}
@@ -406,6 +456,7 @@ export function TaskSidePanel({
         )}
 
         <Input
+          ref={titleInputRef}
           label="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -677,8 +728,8 @@ export function TaskSidePanel({
         {(() => {
           // Only show subtasks section if:
           // - In edit mode and task can have subtasks OR is a template (which has instances)
-          // - In add mode (always allow adding subtasks to new tasks)
-          const showSubtasks = task ? (canHaveSubtasks(task) || task.taskType === TaskType.RECURRING_PARENT) : true;
+          // - In add mode: only if we're not creating a subtask (no nested subtasks)
+          const showSubtasks = task ? (canHaveSubtasks(task) || task.taskType === TaskType.RECURRING_PARENT) : !defaultParentTaskId;
 
           if (!showSubtasks) return null;
 
@@ -717,7 +768,11 @@ export function TaskSidePanel({
                 <div className="mt-2 animate-fadeIn">
                   {task ? (
                     // Edit mode: Show SubtaskList component
-                    <SubtaskList parentTaskId={task.id} onSubtaskClick={handleSubtaskClick} />
+                    <SubtaskList
+                      parentTaskId={task.id}
+                      onSubtaskClick={handleSubtaskClick}
+                      onSubtaskCreated={handleSubtaskCreated}
+                    />
                   ) : (
                     // Add mode: Show pending subtasks UI
                     <div className="space-y-2">

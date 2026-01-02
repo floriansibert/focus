@@ -7,9 +7,10 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 interface SubtaskListProps {
   parentTaskId: string;
   onSubtaskClick?: (subtask: Task) => void;
+  onSubtaskCreated?: (subtaskId: string) => void;
 }
 
-export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) {
+export function SubtaskList({ parentTaskId, onSubtaskClick, onSubtaskCreated }: SubtaskListProps) {
   const { getSubtasks, addSubtask, toggleComplete, deleteTask } = useTaskStore();
   const subtasks = getSubtasks(parentTaskId);
   const [isAdding, setIsAdding] = useState(false);
@@ -18,7 +19,7 @@ export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) 
 
   const handleAdd = () => {
     if (newTitle.trim()) {
-      addSubtask(parentTaskId, {
+      const newSubtaskId = addSubtask(parentTaskId, {
         title: newTitle.trim(),
         completed: false,
         isRecurring: false,
@@ -28,6 +29,11 @@ export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) 
       });
       setNewTitle('');
       setIsAdding(false);
+
+      // Notify parent component about new subtask
+      if (onSubtaskCreated) {
+        onSubtaskCreated(newSubtaskId);
+      }
     }
   };
 

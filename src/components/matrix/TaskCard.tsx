@@ -10,7 +10,6 @@ import { Badge } from '../ui/Badge';
 import { PersonBadge } from '../ui/PersonBadge';
 import { SubtaskProgressPie } from '../ui/SubtaskProgressPie';
 import { DueDateQuickMenu } from '../task/DueDateQuickMenu';
-import { QuickAddSubtaskModal } from '../task/QuickAddSubtaskModal';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { formatRecurrence } from '../../utils/date';
 import { isSubtask, canHaveSubtasks } from '../../utils/taskHelpers';
@@ -18,19 +17,19 @@ import { isSubtask, canHaveSubtasks } from '../../utils/taskHelpers';
 interface TaskCardProps {
   taskId: string;
   onEdit?: (task: Task) => void;
+  onAddSubtask?: (parentTask: Task) => void;
   parentTaskId?: string;
   isSelected?: boolean;
 }
 
-export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, isSelected = false }: TaskCardProps) {
-  const { toggleComplete, deleteTask, addSubtask, toggleStar, updateTask } = useTaskStore();
+export const TaskCard = memo(function TaskCard({ taskId, onEdit, onAddSubtask, parentTaskId, isSelected = false }: TaskCardProps) {
+  const { toggleComplete, deleteTask, toggleStar, updateTask } = useTaskStore();
   const { collapsedTasks, toggleTaskCollapse, startPomodoroWithTask } = useUIStore();
   const task = useTaskStore((state) => state.tasks.find((t) => t.id === taskId));
   const allTasks = useTaskStore((state) => state.tasks);
   const allTags = useTaskStore((state) => state.tags);
   const allPeople = useTaskStore((state) => state.people);
 
-  const [isQuickAddSubtaskOpen, setIsQuickAddSubtaskOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -87,18 +86,6 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
-
-  const handleAddSubtask = (title: string) => {
-    addSubtask(task.id, {
-      title: title.trim(),
-      completed: false,
-      isRecurring: false,
-      tags: [],
-      people: [],
-      order: 0,
-    });
-    setIsQuickAddSubtaskOpen(false);
   };
 
   const handleDeleteConfirm = () => {
@@ -273,7 +260,7 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setIsQuickAddSubtaskOpen(true);
+              onAddSubtask?.(task);
             }}
             tabIndex={-1}
             className="flex-shrink-0 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity transition-colors"
@@ -318,13 +305,6 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, parentTaskId, i
       )}
 
       {/* Modals */}
-      <QuickAddSubtaskModal
-        isOpen={isQuickAddSubtaskOpen}
-        onClose={() => setIsQuickAddSubtaskOpen(false)}
-        onAdd={handleAddSubtask}
-        parentTaskTitle={task.title}
-      />
-
       <ConfirmDialog
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}

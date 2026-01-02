@@ -14,7 +14,7 @@ interface TaskStore {
   isLoading: boolean;
 
   // Task CRUD
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => string;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   moveTask: (id: string, toQuadrant: QuadrantType, newOrder: number) => void;
@@ -23,7 +23,7 @@ interface TaskStore {
   toggleTemplatePause: (id: string) => void;
 
   // Subtask management
-  addSubtask: (parentTaskId: string, subtaskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'quadrant' | 'taskType' | 'parentTaskId'>) => void;
+  addSubtask: (parentTaskId: string, subtaskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'quadrant' | 'taskType' | 'parentTaskId'>) => string;
   getSubtasks: (parentTaskId: string) => Task[];
   deleteTaskWithSubtasks: (id: string) => { hasSubtasks: boolean; subtaskCount: number };
   moveTaskWithSubtasks: (id: string, toQuadrant: QuadrantType, newOrder: number) => void;
@@ -106,6 +106,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     historyLogger.logTaskAdded(newTask);
 
     get().syncToDB();
+
+    return newTask.id;
   },
 
     // Update task
@@ -458,6 +460,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
       // Update parent completion status (may revert to incomplete if new subtask is incomplete)
       get().updateParentCompletionStatus(parentTaskId);
+
+      return newSubtask.id;
     },
 
     // Get all subtasks for a parent task

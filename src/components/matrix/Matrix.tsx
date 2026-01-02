@@ -28,6 +28,7 @@ export function Matrix() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantType | null>(null);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
+  const [defaultParentTaskId, setDefaultParentTaskId] = useState<string | undefined>(undefined);
 
   // Listen for keyboard shortcut events to open task modal
   useEffect(() => {
@@ -48,6 +49,7 @@ export function Matrix() {
     setIsModalOpen(false);
     setEditingTask(undefined);
     setSelectedQuadrant(null);
+    setDefaultParentTaskId(undefined);
   };
 
   // ESC key handler - Close panel first in focus mode, then exit focus mode
@@ -227,7 +229,15 @@ export function Matrix() {
       setEditingTask(task);
       setSelectedQuadrant(task.quadrant);
       setIsModalOpen(true);
+      setDefaultParentTaskId(undefined);
     }
+  };
+
+  const handleAddSubtask = (parentTask: Task) => {
+    setEditingTask(undefined);
+    setSelectedQuadrant(null);
+    setDefaultParentTaskId(parentTask.id);
+    setIsModalOpen(true);
   };
 
   const handleNavigateTask = (direction: 'up' | 'down') => {
@@ -308,6 +318,7 @@ export function Matrix() {
               type={focusedQuadrant}
               onAddTask={() => handleAddTask(focusedQuadrant)}
               onEditTask={handleEditTask}
+              onAddSubtask={handleAddSubtask}
               selectedTaskId={isModalOpen ? editingTask?.id : undefined}
             />
           </div>
@@ -320,6 +331,7 @@ export function Matrix() {
                 onClose={handleCloseModal}
                 task={editingTask}
                 defaultQuadrant={selectedQuadrant || undefined}
+                defaultParentTaskId={defaultParentTaskId}
                 onEditTask={handleEditTask}
                 onNavigate={handleNavigateTask}
               />
@@ -333,21 +345,25 @@ export function Matrix() {
             type={QuadrantType.URGENT_IMPORTANT}
             onAddTask={() => handleAddTask(QuadrantType.URGENT_IMPORTANT)}
             onEditTask={handleEditTask}
+            onAddSubtask={handleAddSubtask}
           />
           <Quadrant
             type={QuadrantType.NOT_URGENT_IMPORTANT}
             onAddTask={() => handleAddTask(QuadrantType.NOT_URGENT_IMPORTANT)}
             onEditTask={handleEditTask}
+            onAddSubtask={handleAddSubtask}
           />
           <Quadrant
             type={QuadrantType.URGENT_NOT_IMPORTANT}
             onAddTask={() => handleAddTask(QuadrantType.URGENT_NOT_IMPORTANT)}
             onEditTask={handleEditTask}
+            onAddSubtask={handleAddSubtask}
           />
           <Quadrant
             type={QuadrantType.NOT_URGENT_NOT_IMPORTANT}
             onAddTask={() => handleAddTask(QuadrantType.NOT_URGENT_NOT_IMPORTANT)}
             onEditTask={handleEditTask}
+            onAddSubtask={handleAddSubtask}
           />
         </div>
       )}
@@ -361,6 +377,7 @@ export function Matrix() {
           onClose={handleCloseModal}
           task={editingTask}
           defaultQuadrant={selectedQuadrant || undefined}
+          defaultParentTaskId={defaultParentTaskId}
           onEditTask={handleEditTask}
         />
       )}
