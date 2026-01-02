@@ -23,7 +23,7 @@ export function KeyboardShortcutsHelp({ isOpen, onClose }: KeyboardShortcutsHelp
       title: 'General',
       shortcuts: [
         { keys: `${mod}+K`, description: 'Open command palette' },
-        { keys: `${mod}+/` || '?', description: 'Show keyboard shortcuts' },
+        { keys: `${mod}+/ or ?`, description: 'Show keyboard shortcuts' },
         { keys: 'F1', description: 'Open help & documentation' },
         { keys: `${mod}+D`, description: 'Toggle dark mode' },
       ],

@@ -80,6 +80,7 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
     if (isOpen) {
       if (task) {
         // Edit mode
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Form initialization from task data
         setTitle(task.title);
         setDescription(task.description || '');
         setQuadrant(task.quadrant);
@@ -116,15 +117,17 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
   useEffect(() => {
     if (isOpen && task) {
       const hasSubtasks = tasks.some((t) => t.parentTaskId === task.id);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Auto-expand based on data
       setIsSubtasksExpanded(hasSubtasks);
     }
-  }, [isOpen, task?.id, tasks]);
+  }, [isOpen, task, tasks]);
 
   // Track form changes
   useEffect(() => {
     if (!task) {
       // Add mode: always consider as having changes if any field is filled
       const hasContent = title.trim() !== '' || description.trim() !== '';
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Computing derived state from form fields
       setHasChanges(hasContent);
       return;
     }
@@ -293,7 +296,7 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, onEditTask }
     }
 
     onClose();
-  }, [validate, task, updateTask, addTask, title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, completed, completedAt, isStarred, pendingSubtasks, tasks, addSubtask, onClose]);
+  }, [validate, task, updateTask, addTask, title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, completed, completedAt, isStarred, pendingSubtasks, addSubtask, onClose]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {

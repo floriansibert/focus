@@ -76,6 +76,7 @@ function MonthlyAdvancedOptions({ mode, onModeChange, recurrence, onChange }: Mo
 
     // Clear advanced fields when switching to simple mode
     if (newMode === 'simple') {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing fields via destructuring
       const { dayOfMonth: _dayOfMonth, weekOfMonth: _weekOfMonth, dayOfWeekInMonth: _dayOfWeekInMonth, ...rest } = recurrence;
       onChange(rest);
     }
@@ -132,6 +133,7 @@ function MonthlyAdvancedOptions({ mode, onModeChange, recurrence, onChange }: Mo
             max="31"
             value={recurrence.dayOfMonth || 1}
             onChange={e => {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing fields via destructuring
               const { weekOfMonth: _weekOfMonth, dayOfWeekInMonth: _dayOfWeekInMonth, ...rest } = recurrence;
               onChange({ ...rest, dayOfMonth: parseInt(e.target.value) || 1 });
             }}
@@ -160,6 +162,7 @@ function MonthlyAdvancedOptions({ mode, onModeChange, recurrence, onChange }: Mo
             <select
               value={recurrence.weekOfMonth ?? 1}
               onChange={e => {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing field via destructuring
                 const { dayOfMonth: _dayOfMonth, ...rest } = recurrence;
                 onChange({
                   ...rest,
@@ -192,6 +195,7 @@ function MonthlyAdvancedOptions({ mode, onModeChange, recurrence, onChange }: Mo
             <select
               value={recurrence.dayOfWeekInMonth ?? 1}
               onChange={e => {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing field via destructuring
                 const { dayOfMonth: _dayOfMonth, ...rest } = recurrence;
                 onChange({
                   ...rest,

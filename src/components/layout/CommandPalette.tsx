@@ -164,6 +164,7 @@ export function CommandPalette({ onExport, onImport, onAbout, onHelp, onSettings
   }, [commandPaletteOpen]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset selection when search changes
     setSelectedIndex(0);
   }, [search]);
 

@@ -67,6 +67,7 @@ export function Matrix() {
   // Close task panel when toggling between focus mode and normal mode
   useEffect(() => {
     // Close modal/panel when focus mode changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Sync UI state when focus mode changes
     setIsModalOpen(false);
     setEditingTask(undefined);
     setSelectedQuadrant(null);

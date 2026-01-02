@@ -86,7 +86,6 @@ export function TemplatesDashboard() {
 
   const handleCloseModal = () => {
     setSelectedTemplate(null);
-    setShowCreateModal(false);
   };
 
   const handleCloseSidePanel = () => {

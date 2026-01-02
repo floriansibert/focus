@@ -92,7 +92,7 @@ export function HelpModal({ isOpen, onClose, initialSection, onOpenShortcuts }: 
     sections.forEach((section) => observer.observe(section));
 
     return () => observer.disconnect();
-  }, [isOpen]);
+  }, [isOpen, setHelpModalSection]);
 
   const handleSectionClick = (sectionId: Section) => {
     isClickScrolling.current = true;

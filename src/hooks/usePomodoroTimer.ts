@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useUIStore } from '../store/uiStore';
 import toast from 'react-hot-toast';
 import type { SessionType } from '../utils/pomodoro';
@@ -12,7 +12,7 @@ export function usePomodoroTimer() {
   const previousTimeRef = useRef<number>(pomodoroState.timeRemaining);
   const previousSessionRef = useRef<SessionType>(pomodoroState.sessionType);
 
-  const handleSessionComplete = (sessionType: SessionType) => {
+  const handleSessionComplete = useCallback((sessionType: SessionType) => {
     if (sessionType === 'work') {
       toast.success('Work session complete! Time for a break.', {
         duration: 5000,
@@ -29,9 +29,9 @@ export function usePomodoroTimer() {
         icon: '🌟',
       });
     }
-  };
+  }, []);
 
-  const handleSessionStart = (sessionType: SessionType) => {
+  const handleSessionStart = useCallback((sessionType: SessionType) => {
     if (sessionType === 'work') {
       toast('Focus time! Let\'s get to work.', {
         duration: 3000,
@@ -43,7 +43,7 @@ export function usePomodoroTimer() {
         icon: '☕',
       });
     }
-  };
+  }, []);
 
   // Timer tick effect - runs every second when timer is active
   // Timer runs regardless of overlay visibility

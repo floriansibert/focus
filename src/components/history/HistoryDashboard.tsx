@@ -98,6 +98,7 @@ export function HistoryDashboard() {
   useEffect(() => {
     // Always load fresh events when the History view is opened
     loadEvents();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Loading async data from IndexedDB on mount
     loadDbStats();
     loadDataOperations();
   }, [loadEvents, loadDbStats, loadDataOperations, operationsLimit]);
