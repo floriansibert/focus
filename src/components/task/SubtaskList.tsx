@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, Trash2, Plus } from 'lucide-react';
 import type { Task } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 interface SubtaskListProps {
   parentTaskId: string;
@@ -13,6 +14,7 @@ export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) 
   const subtasks = getSubtasks(parentTaskId);
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [deleteConfirmSubtask, setDeleteConfirmSubtask] = useState<Task | null>(null);
 
   const handleAdd = () => {
     if (newTitle.trim()) {
@@ -35,6 +37,13 @@ export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) 
     } else if (e.key === 'Escape') {
       setNewTitle('');
       setIsAdding(false);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirmSubtask) {
+      deleteTask(deleteConfirmSubtask.id);
+      setDeleteConfirmSubtask(null);
     }
   };
 
@@ -93,9 +102,7 @@ export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) 
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (confirm(`Delete subtask "${subtask.title}"?`)) {
-                deleteTask(subtask.id);
-              }
+              setDeleteConfirmSubtask(subtask);
             }}
             tabIndex={-1}
             className="flex-shrink-0 text-gray-400 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
@@ -148,6 +155,16 @@ export function SubtaskList({ parentTaskId, onSubtaskClick }: SubtaskListProps) 
           Add Subtask
         </button>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteConfirmSubtask !== null}
+        onClose={() => setDeleteConfirmSubtask(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Subtask"
+        message={`Are you sure you want to delete "${deleteConfirmSubtask?.title}"?`}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }
