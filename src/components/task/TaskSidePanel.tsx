@@ -455,31 +455,33 @@ export function TaskSidePanel({
           </div>
         </div>
 
-        {/* Star Status */}
-        <button
-          type="button"
-          onClick={() => {
-            if (task && latestTask) {
-              toggleStar(latestTask.id);
-            } else {
-              setIsStarred(!isStarred);
-            }
-          }}
-          className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
-          <Star
-            size={20}
-            className={`flex-shrink-0 ${
-              task ? (latestTask?.isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600') : (isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600')
-            }`}
-          />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {task ? (latestTask?.isStarred ? 'Starred' : 'Star this task') : (isStarred ? 'Starred' : 'Star this task')}
-          </span>
-        </button>
+        {/* Star Status & Completion Status */}
+        <div className="flex gap-3">
+          {/* Star Status */}
+          <button
+            type="button"
+            onClick={() => {
+              if (task && latestTask) {
+                toggleStar(latestTask.id);
+              } else {
+                setIsStarred(!isStarred);
+              }
+            }}
+            className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Star
+              size={20}
+              className={`flex-shrink-0 ${
+                task ? (latestTask?.isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600') : (isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600')
+              }`}
+            />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {task ? (latestTask?.isStarred ? 'Starred' : 'Star this task') : (isStarred ? 'Starred' : 'Star this task')}
+            </span>
+          </button>
 
-        {/* Completion Status */}
-        <div className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+          {/* Completion Status */}
+          <div className="flex-1 flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
           {task && subtaskCount > 0 ? (
             // Show progress indicator for tasks with subtasks (edit mode only)
             <div className="flex items-center gap-2">
@@ -561,6 +563,7 @@ export function TaskSidePanel({
               )}
             </div>
           )}
+          </div>
         </div>
 
         {/* Quadrant Selector */}

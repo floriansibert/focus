@@ -301,7 +301,7 @@ export function Matrix() {
       {focusedQuadrant ? (
         // FOCUS MODE: Split-screen layout
         <div className="flex flex-col md:flex-row md:items-start gap-4 p-4 animate-fadeIn">
-          {/* Left: Quadrant (60% on desktop) */}
+          {/* Left: Quadrant (50% on desktop) */}
           <div className="flex-1 md:flex-[3]">
             <Quadrant
               type={focusedQuadrant}
@@ -311,9 +311,9 @@ export function Matrix() {
             />
           </div>
 
-          {/* Right: Detail Panel (40% on desktop) */}
+          {/* Right: Detail Panel (50% on desktop) */}
           {isModalOpen && (
-            <div className="flex-1 md:flex-[2] md:sticky md:top-4">
+            <div className="flex-1 md:flex-[3] md:sticky md:top-4">
               <TaskSidePanel
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
