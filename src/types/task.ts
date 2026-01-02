@@ -45,6 +45,8 @@ export interface RecurrenceConfig {
   interval: number; // e.g., every 2 days
   daysOfWeek?: number[]; // 0-6, for weekly
   dayOfMonth?: number; // 1-31, for monthly
+  weekOfMonth?: number; // 1-5 for 1st-5th, 0 for LAST (used with dayOfWeekInMonth)
+  dayOfWeekInMonth?: number; // 0-6 (Sun-Sat), for monthly patterns like "3rd Monday"
   endDate?: Date;
   nextOccurrence?: Date;
 }
