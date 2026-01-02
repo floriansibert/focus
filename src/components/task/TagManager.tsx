@@ -5,27 +5,18 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { useTaskStore } from '../../store/taskStore';
+import { COLOR_OPTIONS } from '../../constants/colors';
 
 interface TagManagerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const COLOR_OPTIONS = [
-  '#EF4444', // red
-  '#F59E0B', // amber
-  '#10B981', // green
-  '#3B82F6', // blue
-  '#8B5CF6', // purple
-  '#EC4899', // pink
-  '#6B7280', // gray
-];
-
 export function TagManager({ isOpen, onClose }: TagManagerProps) {
   const { tags, addTag, updateTag, deleteTag } = useTaskStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState(COLOR_OPTIONS[0]);
+  const [newTagColor, setNewTagColor] = useState(COLOR_OPTIONS[0].value);
   const [editTagName, setEditTagName] = useState('');
   const [editTagColor, setEditTagColor] = useState('');
 
@@ -38,7 +29,7 @@ export function TagManager({ isOpen, onClose }: TagManagerProps) {
     });
 
     setNewTagName('');
-    setNewTagColor(COLOR_OPTIONS[0]);
+    setNewTagColor(COLOR_OPTIONS[0].value);
   };
 
   const handleStartEdit = (tagId: string) => {
@@ -110,14 +101,14 @@ export function TagManager({ isOpen, onClose }: TagManagerProps) {
               <div className="flex gap-2">
                 {COLOR_OPTIONS.map((color) => (
                   <button
-                    key={color}
-                    onClick={() => setNewTagColor(color)}
+                    key={color.value}
+                    onClick={() => setNewTagColor(color.value)}
                     className={`
                       w-8 h-8 rounded-full transition-all
-                      ${newTagColor === color ? 'ring-2 ring-offset-2 ring-blue-500' : 'hover:scale-110'}
+                      ${newTagColor === color.value ? 'ring-2 ring-offset-2 dark:ring-offset-gray-900 ring-blue-500' : 'hover:scale-110'}
                     `}
-                    style={{ backgroundColor: color }}
-                    aria-label={`Select color ${color}`}
+                    style={{ backgroundColor: color.value }}
+                    aria-label={`Select ${color.name} color`}
                   />
                 ))}
               </div>
@@ -160,14 +151,14 @@ export function TagManager({ isOpen, onClose }: TagManagerProps) {
                         <div className="flex gap-2">
                           {COLOR_OPTIONS.map((color) => (
                             <button
-                              key={color}
-                              onClick={() => setEditTagColor(color)}
+                              key={color.value}
+                              onClick={() => setEditTagColor(color.value)}
                               className={`
                                 w-6 h-6 rounded-full transition-all
-                                ${editTagColor === color ? 'ring-2 ring-offset-2 ring-blue-500' : 'hover:scale-110'}
+                                ${editTagColor === color.value ? 'ring-2 ring-offset-2 dark:ring-offset-gray-900 ring-blue-500' : 'hover:scale-110'}
                               `}
-                              style={{ backgroundColor: color }}
-                              aria-label={`Select color ${color}`}
+                              style={{ backgroundColor: color.value }}
+                              aria-label={`Select ${color.name} color`}
                             />
                           ))}
                         </div>

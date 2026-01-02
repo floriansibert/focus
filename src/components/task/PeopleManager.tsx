@@ -5,27 +5,18 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { PersonBadge } from '../ui/PersonBadge';
 import { useTaskStore } from '../../store/taskStore';
+import { COLOR_OPTIONS } from '../../constants/colors';
 
 interface PeopleManagerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const COLOR_OPTIONS = [
-  '#EF4444', // red
-  '#F59E0B', // amber
-  '#10B981', // green
-  '#3B82F6', // blue
-  '#8B5CF6', // purple
-  '#EC4899', // pink
-  '#6B7280', // gray
-];
-
 export function PeopleManager({ isOpen, onClose }: PeopleManagerProps) {
   const { people, addPerson, updatePerson, deletePerson } = useTaskStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newPersonName, setNewPersonName] = useState('');
-  const [newPersonColor, setNewPersonColor] = useState(COLOR_OPTIONS[0]);
+  const [newPersonColor, setNewPersonColor] = useState(COLOR_OPTIONS[0].value);
   const [editPersonName, setEditPersonName] = useState('');
   const [editPersonColor, setEditPersonColor] = useState('');
 
@@ -38,7 +29,7 @@ export function PeopleManager({ isOpen, onClose }: PeopleManagerProps) {
     });
 
     setNewPersonName('');
-    setNewPersonColor(COLOR_OPTIONS[0]);
+    setNewPersonColor(COLOR_OPTIONS[0].value);
   };
 
   const handleStartEdit = (personId: string) => {
@@ -110,14 +101,14 @@ export function PeopleManager({ isOpen, onClose }: PeopleManagerProps) {
               <div className="flex gap-2">
                 {COLOR_OPTIONS.map((color) => (
                   <button
-                    key={color}
-                    onClick={() => setNewPersonColor(color)}
+                    key={color.value}
+                    onClick={() => setNewPersonColor(color.value)}
                     className={`
                       w-8 h-8 rounded-full transition-all
-                      ${newPersonColor === color ? 'ring-2 ring-offset-2 ring-blue-500' : 'hover:scale-110'}
+                      ${newPersonColor === color.value ? 'ring-2 ring-offset-2 dark:ring-offset-gray-900 ring-blue-500' : 'hover:scale-110'}
                     `}
-                    style={{ backgroundColor: color }}
-                    aria-label={`Select color ${color}`}
+                    style={{ backgroundColor: color.value }}
+                    aria-label={`Select ${color.name} color`}
                   />
                 ))}
               </div>
@@ -160,14 +151,14 @@ export function PeopleManager({ isOpen, onClose }: PeopleManagerProps) {
                         <div className="flex gap-2">
                           {COLOR_OPTIONS.map((color) => (
                             <button
-                              key={color}
-                              onClick={() => setEditPersonColor(color)}
+                              key={color.value}
+                              onClick={() => setEditPersonColor(color.value)}
                               className={`
                                 w-6 h-6 rounded-full transition-all
-                                ${editPersonColor === color ? 'ring-2 ring-offset-2 ring-blue-500' : 'hover:scale-110'}
+                                ${editPersonColor === color.value ? 'ring-2 ring-offset-2 dark:ring-offset-gray-900 ring-blue-500' : 'hover:scale-110'}
                               `}
-                              style={{ backgroundColor: color }}
-                              aria-label={`Select color ${color}`}
+                              style={{ backgroundColor: color.value }}
+                              aria-label={`Select ${color.name} color`}
                             />
                           ))}
                         </div>

@@ -2,28 +2,18 @@ import { useState } from 'react';
 import { Plus, Check, X } from 'lucide-react';
 import { PersonBadge } from '../ui/PersonBadge';
 import { useTaskStore } from '../../store/taskStore';
+import { COLOR_OPTIONS } from '../../constants/colors';
 
 interface PeopleSelectorProps {
   selectedPeople: string[];
   onChange: (peopleIds: string[]) => void;
 }
 
-const PERSON_COLORS = [
-  '#3B82F6', // blue
-  '#10B981', // green
-  '#EF4444', // red
-  '#F59E0B', // amber
-  '#8B5CF6', // purple
-  '#EC4899', // pink
-  '#14B8A6', // teal
-  '#F97316', // orange
-];
-
 export function PeopleSelector({ selectedPeople, onChange }: PeopleSelectorProps) {
   const { people, addPerson } = useTaskStore();
   const [isCreating, setIsCreating] = useState(false);
   const [newPersonName, setNewPersonName] = useState('');
-  const [newPersonColor, setNewPersonColor] = useState(PERSON_COLORS[0]);
+  const [newPersonColor, setNewPersonColor] = useState(COLOR_OPTIONS[0].value);
 
   const togglePerson = (personId: string) => {
     if (selectedPeople.includes(personId)) {
@@ -47,13 +37,13 @@ export function PeopleSelector({ selectedPeople, onChange }: PeopleSelectorProps
 
     // Reset form
     setNewPersonName('');
-    setNewPersonColor(PERSON_COLORS[0]);
+    setNewPersonColor(COLOR_OPTIONS[0].value);
     setIsCreating(false);
   };
 
   const handleCancel = () => {
     setNewPersonName('');
-    setNewPersonColor(PERSON_COLORS[0]);
+    setNewPersonColor(COLOR_OPTIONS[0].value);
     setIsCreating(false);
   };
 
@@ -101,15 +91,16 @@ export function PeopleSelector({ selectedPeople, onChange }: PeopleSelectorProps
             autoFocus
           />
           <div className="flex gap-1">
-            {PERSON_COLORS.map((color) => (
+            {COLOR_OPTIONS.map((color) => (
               <button
-                key={color}
+                key={color.value}
                 type="button"
-                onClick={() => setNewPersonColor(color)}
-                className={`w-5 h-5 rounded-full border-2 transition-all ${
-                  newPersonColor === color ? 'border-gray-900 dark:border-gray-100 scale-110' : 'border-gray-300 dark:border-gray-600'
+                onClick={() => setNewPersonColor(color.value)}
+                className={`w-5 h-5 rounded-full cursor-pointer transition-all ${
+                  newPersonColor === color.value ? 'ring-2 ring-offset-2 dark:ring-offset-gray-900 ring-blue-500' : ''
                 }`}
-                style={{ backgroundColor: color }}
+                style={{ backgroundColor: color.value }}
+                aria-label={`Select ${color.name} color`}
               />
             ))}
           </div>

@@ -2,28 +2,18 @@ import { useState } from 'react';
 import { Plus, Check, X } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { useTaskStore } from '../../store/taskStore';
+import { COLOR_OPTIONS } from '../../constants/colors';
 
 interface TagSelectorProps {
   selectedTags: string[];
   onChange: (tagIds: string[]) => void;
 }
 
-const TAG_COLORS = [
-  '#3B82F6', // blue
-  '#10B981', // green
-  '#EF4444', // red
-  '#F59E0B', // amber
-  '#8B5CF6', // purple
-  '#EC4899', // pink
-  '#14B8A6', // teal
-  '#F97316', // orange
-];
-
 export function TagSelector({ selectedTags, onChange }: TagSelectorProps) {
   const { tags, addTag } = useTaskStore();
   const [isCreating, setIsCreating] = useState(false);
   const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState(TAG_COLORS[0]);
+  const [newTagColor, setNewTagColor] = useState(COLOR_OPTIONS[0].value);
 
   const toggleTag = (tagId: string) => {
     if (selectedTags.includes(tagId)) {
@@ -47,13 +37,13 @@ export function TagSelector({ selectedTags, onChange }: TagSelectorProps) {
 
     // Reset form
     setNewTagName('');
-    setNewTagColor(TAG_COLORS[0]);
+    setNewTagColor(COLOR_OPTIONS[0].value);
     setIsCreating(false);
   };
 
   const handleCancel = () => {
     setNewTagName('');
-    setNewTagColor(TAG_COLORS[0]);
+    setNewTagColor(COLOR_OPTIONS[0].value);
     setIsCreating(false);
   };
 
@@ -101,15 +91,16 @@ export function TagSelector({ selectedTags, onChange }: TagSelectorProps) {
             autoFocus
           />
           <div className="flex gap-1">
-            {TAG_COLORS.map((color) => (
+            {COLOR_OPTIONS.map((color) => (
               <button
-                key={color}
+                key={color.value}
                 type="button"
-                onClick={() => setNewTagColor(color)}
-                className={`w-5 h-5 rounded-full border-2 transition-all ${
-                  newTagColor === color ? 'border-gray-900 dark:border-gray-100 scale-110' : 'border-gray-300 dark:border-gray-600'
+                onClick={() => setNewTagColor(color.value)}
+                className={`w-5 h-5 rounded-full cursor-pointer transition-all ${
+                  newTagColor === color.value ? 'ring-2 ring-offset-2 dark:ring-offset-gray-900 ring-blue-500' : ''
                 }`}
-                style={{ backgroundColor: color }}
+                style={{ backgroundColor: color.value }}
+                aria-label={`Select ${color.name} color`}
               />
             ))}
           </div>
