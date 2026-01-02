@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { db } from '../../lib/db';
 import toast from 'react-hot-toast';
+import type { Task, QuadrantType } from '../../types/task';
 
 export function TaskDebugPanel() {
   const tasks = useTaskStore((state) => state.tasks);
   const { deleteTask, loadFromDB } = useTaskStore();
-  const [dbTasks, setDbTasks] = useState<any[]>([]);
+  const [dbTasks, setDbTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     const loadDbTasks = async () => {
@@ -68,7 +69,7 @@ export function TaskDebugPanel() {
 
     const { updateTask } = useTaskStore.getState();
     for (const task of invalid) {
-      updateTask(task.id, { quadrant: selectedQuadrant as any });
+      updateTask(task.id, { quadrant: selectedQuadrant as QuadrantType });
     }
 
     await loadFromDB();

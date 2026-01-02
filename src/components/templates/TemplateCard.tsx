@@ -1,6 +1,5 @@
 import { Repeat, Edit2, Eye, Trash2, Calendar, BarChart2, Star, Pause, Play } from 'lucide-react';
 import type { Task } from '../../types/task';
-import { QuadrantType } from '../../types/task';
 import { QUADRANT_INFO } from '../../types/quadrant';
 import { useTaskStore } from '../../store/taskStore';
 import { getTemplateStats } from '../../utils/templateHelpers';

@@ -87,7 +87,7 @@ const getInitialTheme = (): 'light' | 'dark' => {
     try {
       const parsed = JSON.parse(saved);
       if (parsed.state?.theme) return parsed.state.theme;
-    } catch (e) {
+    } catch {
       // Ignore parse errors
     }
   }
@@ -368,7 +368,7 @@ export const useUIStore = create<UIStore>()(
         lastExportReminderDismissed: state.lastExportReminderDismissed,
         exportReminderSnoozedUntil: state.exportReminderSnoozedUntil,
       }),
-      merge: (persistedState: any, currentState) => ({
+      merge: (persistedState: Record<string, unknown>, currentState) => ({
         ...currentState,
         ...persistedState,
         collapsedTasks: new Set(persistedState?.collapsedTasks || []),

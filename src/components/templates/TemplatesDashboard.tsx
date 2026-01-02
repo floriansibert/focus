@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Repeat, Plus, Inbox } from 'lucide-react';
+import { Repeat, Plus } from 'lucide-react';
 import { useTaskStore } from '../../store/taskStore';
-import { useUIStore } from '../../store/uiStore';
 import { TaskType, QuadrantType } from '../../types/task';
 import { TemplateCard } from './TemplateCard';
 import { TaskModal } from '../task/TaskModal';
@@ -13,7 +12,6 @@ import toast from 'react-hot-toast';
 export function TemplatesDashboard() {
   const { tasks, deleteTask, toggleTemplatePause } = useTaskStore();
   const [selectedTemplate, setSelectedTemplate] = useState<Task | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewingInstancesFor, setViewingInstancesFor] = useState<Task | null>(null);
 
   // Get all RECURRING_PARENT tasks (templates)
@@ -21,9 +19,6 @@ export function TemplatesDashboard() {
     () => tasks.filter((task) => task.taskType === TaskType.RECURRING_PARENT),
     [tasks]
   );
-
-  // Template count
-  const templateCount = templates.length;
 
   const handleEdit = (template: Task) => {
     setSelectedTemplate(template);

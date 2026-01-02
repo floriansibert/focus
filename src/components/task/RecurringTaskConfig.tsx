@@ -76,7 +76,7 @@ function MonthlyAdvancedOptions({ mode, onModeChange, recurrence, onChange }: Mo
 
     // Clear advanced fields when switching to simple mode
     if (newMode === 'simple') {
-      const { dayOfMonth, weekOfMonth, dayOfWeekInMonth, ...rest } = recurrence;
+      const { dayOfMonth: _dayOfMonth, weekOfMonth: _weekOfMonth, dayOfWeekInMonth: _dayOfWeekInMonth, ...rest } = recurrence;
       onChange(rest);
     }
   };
@@ -132,7 +132,7 @@ function MonthlyAdvancedOptions({ mode, onModeChange, recurrence, onChange }: Mo
             max="31"
             value={recurrence.dayOfMonth || 1}
             onChange={e => {
-              const { weekOfMonth, dayOfWeekInMonth, ...rest } = recurrence;
+              const { weekOfMonth: _weekOfMonth, dayOfWeekInMonth: _dayOfWeekInMonth, ...rest } = recurrence;
               onChange({ ...rest, dayOfMonth: parseInt(e.target.value) || 1 });
             }}
             className="
@@ -160,7 +160,7 @@ function MonthlyAdvancedOptions({ mode, onModeChange, recurrence, onChange }: Mo
             <select
               value={recurrence.weekOfMonth ?? 1}
               onChange={e => {
-                const { dayOfMonth, ...rest } = recurrence;
+                const { dayOfMonth: _dayOfMonth, ...rest } = recurrence;
                 onChange({
                   ...rest,
                   weekOfMonth: parseInt(e.target.value),
@@ -192,7 +192,7 @@ function MonthlyAdvancedOptions({ mode, onModeChange, recurrence, onChange }: Mo
             <select
               value={recurrence.dayOfWeekInMonth ?? 1}
               onChange={e => {
-                const { dayOfMonth, ...rest } = recurrence;
+                const { dayOfMonth: _dayOfMonth, ...rest } = recurrence;
                 onChange({
                   ...rest,
                   weekOfMonth: recurrence.weekOfMonth ?? 1,

@@ -35,7 +35,15 @@ export function QuadrantDistribution() {
   );
 
   // Custom label with smart hiding and contrast
-  const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, payload }: any) => {
+  const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, payload }: {
+    cx: number;
+    cy: number;
+    midAngle: number;
+    innerRadius: number;
+    outerRadius: number;
+    percent: number;
+    payload: Record<string, unknown>;
+  }) => {
     // Hide labels for slices < 5%
     if (percent < 0.05) return null;
 
@@ -59,9 +67,9 @@ export function QuadrantDistribution() {
   };
 
   // Custom legend with counts
-  const CustomLegend = ({ payload }: any) => (
+  const CustomLegend = ({ payload }: { payload: Array<Record<string, unknown>> }) => (
     <div className="flex flex-wrap justify-center gap-4 mt-4">
-      {payload.map((entry: any, index: number) => (
+      {payload.map((entry: Record<string, unknown>, index: number) => (
         <div
           key={index}
           className="flex items-center gap-2"
@@ -81,7 +89,7 @@ export function QuadrantDistribution() {
   );
 
   // Enhanced tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: Record<string, unknown> }> }) => {
     if (!active || !payload || !payload.length) return null;
 
     const data = payload[0].payload;
@@ -125,7 +133,7 @@ export function QuadrantDistribution() {
           >
             <PieChart>
               <Pie
-                data={distribution as any}
+                data={distribution}
                 cx="50%"
                 cy="50%"
                 labelLine={false}

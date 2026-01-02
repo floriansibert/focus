@@ -39,27 +39,6 @@ export function HistoryDashboard() {
   const [showDeletePeopleConfirm, setShowDeletePeopleConfirm] = useState(false);
   const clearHistoryDropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Always load fresh events when the History view is opened
-    loadEvents();
-    loadDbStats();
-    loadDataOperations();
-  }, [loadEvents, operationsLimit]);
-
-  // Click-outside handler for dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (clearHistoryDropdownRef.current && !clearHistoryDropdownRef.current.contains(event.target as Node)) {
-        setIsClearDropdownOpen(false);
-      }
-    };
-
-    if (isClearDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isClearDropdownOpen]);
-
   const loadDataOperations = async () => {
     try {
       // Load one extra to check if there are more
@@ -74,39 +53,6 @@ export function HistoryDashboard() {
       }
     } catch (error) {
       console.error('Error loading data operations:', error);
-    }
-  };
-
-  const handleLoadMoreOperations = () => {
-    setOperationsLimit(prev => prev + 10);
-  };
-
-  const handleClearOperations = async () => {
-    try {
-      // Get all operations
-      const allOperations = await dataOperationLogger.getAllOperations();
-
-      // Find the most recent import
-      const mostRecentImport = allOperations.find(op => op.operationType === 'import');
-
-      // Clear all operations
-      await db.dataOperations.clear();
-
-      // Restore the most recent import if it exists
-      if (mostRecentImport && mostRecentImport.id) {
-        const { id, ...importWithoutId } = mostRecentImport;
-        await db.dataOperations.add(importWithoutId);
-      }
-
-      // Reload operations and stats
-      await loadDataOperations();
-      await loadDbStats();
-
-      toast.success('Operations cleared (kept most recent import)');
-      setShowClearOperationsConfirm(false);
-    } catch (error) {
-      console.error('Error clearing operations:', error);
-      toast.error('Failed to clear operations');
     }
   };
 
@@ -142,6 +88,59 @@ export function HistoryDashboard() {
       });
     } catch (error) {
       console.error('Error loading database stats:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Always load fresh events when the History view is opened
+    loadEvents();
+    loadDbStats();
+    loadDataOperations();
+  }, [loadEvents, loadDbStats, loadDataOperations, operationsLimit]);
+
+  // Click-outside handler for dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (clearHistoryDropdownRef.current && !clearHistoryDropdownRef.current.contains(event.target as Node)) {
+        setIsClearDropdownOpen(false);
+      }
+    };
+
+    if (isClearDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isClearDropdownOpen]);
+
+  const handleLoadMoreOperations = () => {
+    setOperationsLimit(prev => prev + 10);
+  };
+
+  const handleClearOperations = async () => {
+    try {
+      // Get all operations
+      const allOperations = await dataOperationLogger.getAllOperations();
+
+      // Find the most recent import
+      const mostRecentImport = allOperations.find(op => op.operationType === 'import');
+
+      // Clear all operations
+      await db.dataOperations.clear();
+
+      // Restore the most recent import if it exists
+      if (mostRecentImport && mostRecentImport.id) {
+        await db.dataOperations.add(mostRecentImport);
+      }
+
+      // Reload operations and stats
+      await loadDataOperations();
+      await loadDbStats();
+
+      toast.success('Operations cleared (kept most recent import)');
+      setShowClearOperationsConfirm(false);
+    } catch (error) {
+      console.error('Error clearing operations:', error);
+      toast.error('Failed to clear operations');
     }
   };
 

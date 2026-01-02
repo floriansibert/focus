@@ -87,11 +87,11 @@ export function HistoryFilters() {
             </label>
             <div className="flex flex-wrap gap-2">
               {Object.entries(ACTION_TYPE_LABELS).map(([type, { label, color }]) => {
-                const isSelected = filters.actionTypes.includes(type as any);
+                const isSelected = filters.actionTypes.includes(type as HistoryActionType);
                 return (
                   <button
                     key={type}
-                    onClick={() => toggleActionType(type as any)}
+                    onClick={() => toggleActionType(type as HistoryActionType)}
                     className={`
                       px-3 py-1 rounded-full text-xs font-medium transition-all
                       ${color}

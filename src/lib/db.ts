@@ -41,7 +41,7 @@ export class FocusDatabase extends Dexie {
       history: '++timestamp, action',
     }).upgrade(tx => {
       // Migration logic: set taskType for existing tasks
-      return tx.table('tasks').toCollection().modify((task: any) => {
+      return tx.table('tasks').toCollection().modify((task: Record<string, unknown>) => {
         if (!task.taskType) {
           // Determine task type based on existing fields
           if (task.isRecurring && !task.parentTaskId) {
@@ -62,7 +62,7 @@ export class FocusDatabase extends Dexie {
       history: '++timestamp, action',
     }).upgrade(tx => {
       // Set isStarred = false for all existing tasks
-      return tx.table('tasks').toCollection().modify((task: any) => {
+      return tx.table('tasks').toCollection().modify((task: Record<string, unknown>) => {
         if (task.isStarred === undefined) {
           task.isStarred = false;
         }
@@ -88,7 +88,7 @@ export class FocusDatabase extends Dexie {
     }).upgrade(tx => {
       // Fix taskType for existing recurring tasks
       // Some tasks may have been created with wrong taskType (STANDARD instead of RECURRING_PARENT)
-      return tx.table('tasks').toCollection().modify((task: any) => {
+      return tx.table('tasks').toCollection().modify((task: Record<string, unknown>) => {
         // If task is recurring and has no parent, it should be RECURRING_PARENT
         if (task.isRecurring && !task.parentTaskId && task.taskType !== TaskType.RECURRING_PARENT) {
           console.log('Fixing recurring parent task:', task.id, task.title);
@@ -109,7 +109,7 @@ export class FocusDatabase extends Dexie {
       history: '++id, timestamp, action, taskId',
     }).upgrade(tx => {
       // Initialize people field for existing tasks
-      return tx.table('tasks').toCollection().modify((task: any) => {
+      return tx.table('tasks').toCollection().modify((task: Record<string, unknown>) => {
         if (!task.people) {
           task.people = [];
         }

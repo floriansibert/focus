@@ -44,6 +44,12 @@ export function Matrix() {
     return () => window.removeEventListener('openTaskModal', handleOpenTaskModal);
   }, []);
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingTask(undefined);
+    setSelectedQuadrant(null);
+  };
+
   // ESC key handler - Close panel first in focus mode, then exit focus mode
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -221,12 +227,6 @@ export function Matrix() {
       setSelectedQuadrant(task.quadrant);
       setIsModalOpen(true);
     }
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingTask(undefined);
-    setSelectedQuadrant(null);
   };
 
   const handleNavigateTask = (direction: 'up' | 'down') => {

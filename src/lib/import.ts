@@ -60,7 +60,7 @@ export function importFromJSON(jsonString: string): ImportResult {
     }
 
     // Validate tags
-    const validatedTags: Tag[] = data.tags.filter((tag: any) => {
+    const validatedTags: Tag[] = data.tags.filter((tag: Record<string, unknown>) => {
       if (!tag.id || !tag.name) {
         warnings.push(`Invalid tag found, skipping`);
         return false;
@@ -69,7 +69,7 @@ export function importFromJSON(jsonString: string): ImportResult {
     });
 
     // Validate people (optional for backwards compatibility)
-    const validatedPeople: Person[] = data.people ? data.people.filter((person: any) => {
+    const validatedPeople: Person[] = data.people ? data.people.filter((person: Record<string, unknown>) => {
       if (!person.id || !person.name) {
         warnings.push(`Invalid person found, skipping`);
         return false;

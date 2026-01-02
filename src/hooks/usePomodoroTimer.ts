@@ -12,6 +12,39 @@ export function usePomodoroTimer() {
   const previousTimeRef = useRef<number>(pomodoroState.timeRemaining);
   const previousSessionRef = useRef<SessionType>(pomodoroState.sessionType);
 
+  const handleSessionComplete = (sessionType: SessionType) => {
+    if (sessionType === 'work') {
+      toast.success('Work session complete! Time for a break.', {
+        duration: 5000,
+        icon: '🎉',
+      });
+    } else if (sessionType === 'shortBreak') {
+      toast.success('Break complete! Ready for another pomodoro?', {
+        duration: 5000,
+        icon: '💪',
+      });
+    } else {
+      toast.success('Long break complete! Great work!', {
+        duration: 5000,
+        icon: '🌟',
+      });
+    }
+  };
+
+  const handleSessionStart = (sessionType: SessionType) => {
+    if (sessionType === 'work') {
+      toast('Focus time! Let\'s get to work.', {
+        duration: 3000,
+        icon: '🎯',
+      });
+    } else {
+      toast('Break time! Relax and recharge.', {
+        duration: 3000,
+        icon: '☕',
+      });
+    }
+  };
+
   // Timer tick effect - runs every second when timer is active
   // Timer runs regardless of overlay visibility
   useEffect(() => {
@@ -34,7 +67,7 @@ export function usePomodoroTimer() {
     }
 
     previousTimeRef.current = pomodoroState.timeRemaining;
-  }, [pomodoroState.timeRemaining, pomodoroState.sessionType]);
+  }, [pomodoroState.timeRemaining, pomodoroState.sessionType, handleSessionComplete]);
 
   // Session type change notification effect
   useEffect(() => {
@@ -47,38 +80,5 @@ export function usePomodoroTimer() {
     }
 
     previousSessionRef.current = pomodoroState.sessionType;
-  }, [pomodoroState.sessionType, pomodoroState.timeRemaining, pomodoroState.totalTime]);
-
-  function handleSessionComplete(sessionType: SessionType) {
-    if (sessionType === 'work') {
-      toast.success('Work session complete! Time for a break.', {
-        duration: 5000,
-        icon: '🎉',
-      });
-    } else if (sessionType === 'shortBreak') {
-      toast.success('Break complete! Ready for another pomodoro?', {
-        duration: 5000,
-        icon: '💪',
-      });
-    } else {
-      toast.success('Long break complete! Great work!', {
-        duration: 5000,
-        icon: '🌟',
-      });
-    }
-  }
-
-  function handleSessionStart(sessionType: SessionType) {
-    if (sessionType === 'work') {
-      toast('Focus time! Let\'s get to work.', {
-        duration: 3000,
-        icon: '🎯',
-      });
-    } else {
-      toast('Break time! Relax and recharge.', {
-        duration: 3000,
-        icon: '☕',
-      });
-    }
-  }
+  }, [pomodoroState.sessionType, pomodoroState.timeRemaining, pomodoroState.totalTime, handleSessionStart]);
 }

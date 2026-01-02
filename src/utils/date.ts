@@ -24,7 +24,7 @@ function findNthWeekdayOfMonth(
   dayOfWeek: number,
   interval: number
 ): Date {
-  let targetMonth = addMonths(lastDate, interval);
+  const targetMonth = addMonths(lastDate, interval);
 
   // Special case: Last occurrence
   if (weekOfMonth === 0) {

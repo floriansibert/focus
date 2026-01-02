@@ -2,7 +2,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useTaskStore } from '../store/taskStore';
 import { useHistoryStore } from '../store/historyStore';
 import { historyLogger } from '../lib/historyLogger';
-import type { Task, HistoryActionType } from '../types/task';
+import type { Task, Tag, HistoryActionType } from '../types/task';
 import { db } from '../lib/db';
 
 let isUndoRedoOperation = false;
@@ -42,8 +42,8 @@ function detectTaskChanges(current: Task, previous: Task): HistoryActionType[] {
 export function useUndoRedo() {
   const { tasks, tags, setTasks, setTags } = useTaskStore();
   const { pushState, undo, redo, canUndo, canRedo } = useHistoryStore();
-  const lastRecordedState = useRef<{ tasks: any[]; tags: any[] } | null>(null);
-  const pendingState = useRef<{ tasks: any[]; tags: any[] } | null>(null);
+  const lastRecordedState = useRef<{ tasks: Task[]; tags: Tag[] } | null>(null);
+  const pendingState = useRef<{ tasks: Task[]; tags: Tag[] } | null>(null);
 
   // Record state changes (but NOT during undo/redo operations)
   useEffect(() => {

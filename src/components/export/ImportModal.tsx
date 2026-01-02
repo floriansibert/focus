@@ -50,7 +50,7 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
         people: result.people?.length || 0,
         warnings: result.warnings,
       });
-    } catch (error) {
+    } catch {
       toast.error('Failed to read file');
       setSelectedFile(null);
     }

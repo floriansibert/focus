@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Plus,
   Edit2,
@@ -20,7 +21,7 @@ interface HistoryEventRowProps {
   onTaskClick: (taskId: string) => void;
 }
 
-const ACTION_ICONS: Record<string, any> = {
+const ACTION_ICONS: Record<string, React.ComponentType> = {
   task_added: Plus,
   task_updated: Edit2,
   task_deleted: Trash2,
@@ -61,7 +62,7 @@ export function HistoryEventRow({ event, onTaskClick }: HistoryEventRowProps) {
     });
   };
 
-  const formatValue = (value: any, fieldName?: string): string => {
+  const formatValue = (value: unknown, fieldName?: string): string => {
     if (value === null || value === undefined) return '(empty)';
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
     if (Array.isArray(value)) {

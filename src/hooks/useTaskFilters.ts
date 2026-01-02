@@ -153,5 +153,5 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
     return candidateTasks
       .filter((task) => directMatches.has(task.id))
       .filter((task) => task.taskType !== TaskType.RECURRING_PARENT);
-  }, [tasks, searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, showStarredOnly, allTags, allPeople, quadrant, starredFilterByQuadrant]);
+  }, [tasks, searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, showStarredOnly, allTags, allPeople]);
 }

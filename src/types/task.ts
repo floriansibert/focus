@@ -121,8 +121,8 @@ export type HistoryActionType = (typeof HistoryActionTypeValues)[keyof typeof Hi
 // Field change tracking for updates
 export interface FieldChange {
   field: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: unknown;
+  newValue: unknown;
 }
 
 // Comprehensive history entry
