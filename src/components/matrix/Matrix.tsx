@@ -49,9 +49,15 @@ export function Matrix() {
   useEffect(() => {
     const handleCreateSubtask = () => {
       if (focusedQuadrant && editingTask) {
+        // If current task is a subtask, create sibling subtask under the same parent
+        // Otherwise, create a subtask under the current task
+        const parentTaskId = isSubtask(editingTask)
+          ? editingTask.parentTaskId
+          : editingTask.id;
+
         setEditingTask(undefined);
         setSelectedQuadrant(null);
-        setDefaultParentTaskId(editingTask.id);
+        setDefaultParentTaskId(parentTaskId);
         setIsModalOpen(true);
       } else if (focusedQuadrant && !editingTask) {
         toast.error('Please select a task first to add a subtask');
@@ -60,7 +66,7 @@ export function Matrix() {
 
     window.addEventListener('createSubtaskForSelectedTask', handleCreateSubtask);
     return () => window.removeEventListener('createSubtaskForSelectedTask', handleCreateSubtask);
-  }, [focusedQuadrant, editingTask]);
+  }, [focusedQuadrant, editingTask, tasks]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);

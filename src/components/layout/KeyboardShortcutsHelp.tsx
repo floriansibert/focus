@@ -52,7 +52,7 @@ export function KeyboardShortcutsHelp({ isOpen, onClose }: KeyboardShortcutsHelp
       title: 'Focus Mode',
       shortcuts: [
         { keys: `${mod}+Space`, description: 'Create task in focused quadrant' },
-        { keys: `${mod}+Shift+Space`, description: 'Create subtask for selected task' },
+        { keys: `${mod}+Shift+Space`, description: 'Create subtask (or sibling if subtask selected)' },
         { keys: `${mod}+S`, description: 'Toggle star on selected task' },
         { keys: '↑ / ↓', description: 'Navigate between tasks' },
         { keys: '← / →', description: 'Collapse/expand subtasks' },
