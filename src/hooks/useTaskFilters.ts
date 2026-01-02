@@ -70,9 +70,9 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
         const now = new Date();
         now.setHours(0, 0, 0, 0); // Start of today for comparison
 
-        const isOverdue = task.dueDate &&
-                         new Date(task.dueDate) < now &&
-                         !task.completed;
+        const isOverdue = !!(task.dueDate &&
+                            new Date(task.dueDate) < now &&
+                            !task.completed);
 
         matches = matches && isOverdue;
       }
