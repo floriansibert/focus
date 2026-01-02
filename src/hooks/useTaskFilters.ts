@@ -8,7 +8,7 @@ import { useTaskStore } from '../store/taskStore';
  * Hook to filter tasks based on current filter state
  */
 export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
-  const { searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, starredFilterByQuadrant } = useUIStore();
+  const { searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, starredFilterByQuadrant, showTodayView, todayViewDaysAhead, todayViewComponents } = useUIStore();
   const allTags = useTaskStore((state) => state.tags);
   const allPeople = useTaskStore((state) => state.people);
   const showStarredOnly = quadrant ? starredFilterByQuadrant[quadrant] : false;
@@ -75,6 +75,42 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
                             !task.completed);
 
         matches = matches && isOverdue;
+      }
+
+      // Today's view filter (3-component OR logic)
+      if (showTodayView) {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Start of today
+
+        const futureDate = new Date(now);
+        futureDate.setDate(futureDate.getDate() + todayViewDaysAhead);
+        futureDate.setHours(23, 59, 59, 999); // End of future day
+
+        let matchesTodayView = false;
+
+        // Component 1: Overdue tasks
+        if (todayViewComponents.showOverdue && task.dueDate && !task.completed) {
+          const dueDate = new Date(task.dueDate);
+          dueDate.setHours(0, 0, 0, 0);
+          if (dueDate < now) {
+            matchesTodayView = true;
+          }
+        }
+
+        // Component 2: Due soon (today or within N days)
+        if (todayViewComponents.showDueSoon && task.dueDate && !task.completed) {
+          const dueDate = new Date(task.dueDate);
+          if (dueDate >= now && dueDate <= futureDate) {
+            matchesTodayView = true;
+          }
+        }
+
+        // Component 3: ALL starred tasks
+        if (todayViewComponents.showStarred && task.isStarred) {
+          matchesTodayView = true;
+        }
+
+        matches = matches && matchesTodayView;
       }
 
       // Search query filter
@@ -153,5 +189,5 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
     return candidateTasks
       .filter((task) => directMatches.has(task.id))
       .filter((task) => task.taskType !== TaskType.RECURRING_PARENT);
-  }, [tasks, searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, showStarredOnly, allTags, allPeople]);
+  }, [tasks, searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, showStarredOnly, allTags, allPeople, showTodayView, todayViewDaysAhead, todayViewComponents]);
 }

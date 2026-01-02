@@ -8,7 +8,7 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-type SettingsCategory = 'history' | 'export';
+type SettingsCategory = 'history' | 'export' | 'todayview';
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [selectedCategory, setSelectedCategory] = useState<SettingsCategory>('export');
@@ -20,6 +20,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const exportReminderFrequencyDays = useUIStore((state) => state.exportReminderFrequencyDays);
   const setExportReminderEnabled = useUIStore((state) => state.setExportReminderEnabled);
   const setExportReminderFrequencyDays = useUIStore((state) => state.setExportReminderFrequencyDays);
+
+  const todayViewDaysAhead = useUIStore((state) => state.todayViewDaysAhead);
+  const setTodayViewDaysAhead = useUIStore((state) => state.setTodayViewDaysAhead);
 
   const retentionOptions = [
     { value: null, label: 'Keep forever', description: 'Never delete history events' },
@@ -37,8 +40,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     { value: 90, label: 'Quarterly', description: 'Remind me every 90 days' },
   ];
 
+  const daysAheadOptions = [
+    { value: 1, label: '1 day', description: 'Show tasks due today or tomorrow' },
+    { value: 3, label: '3 days', description: 'Show tasks due within 3 days' },
+    { value: 7, label: '7 days', description: 'Show tasks due within a week' },
+    { value: 14, label: '14 days', description: 'Show tasks due within 2 weeks' },
+    { value: 30, label: '30 days', description: 'Show tasks due within a month' },
+  ];
+
   const categories = [
     { id: 'export' as const, label: 'Export Reminders', icon: '📤' },
+    { id: 'todayview' as const, label: "Today's View", icon: '📅' },
     { id: 'history' as const, label: 'History Retention', icon: '🕐' },
   ];
 
@@ -81,6 +93,59 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
         {/* Right Content Pane */}
         <div className="flex-1 overflow-y-auto">
+          {/* Today's View Settings Section */}
+          {selectedCategory === 'todayview' && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Today's View Settings
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Configure the default "look ahead" period for the Today's view filter.
+              </p>
+
+              {/* Radio button group */}
+              <div className="space-y-2">
+                {daysAheadOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className={`
+                      flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer
+                      transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50
+                      ${
+                        todayViewDaysAhead === option.value
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-gray-200 dark:border-gray-700'
+                      }
+                    `}
+                  >
+                    <input
+                      type="radio"
+                      name="todayViewDaysAhead"
+                      checked={todayViewDaysAhead === option.value}
+                      onChange={() => setTodayViewDaysAhead(option.value)}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-blue-600"
+                    />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {option.label}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {option.description}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              {/* Info message */}
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-xs text-blue-800 dark:text-blue-300">
+                  <strong>Note:</strong> This is the default setting. You can change the look-ahead period at any time from the Today's view button in the header.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* History Retention Section */}
           {selectedCategory === 'history' && (
             <div>

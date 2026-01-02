@@ -27,22 +27,25 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [dateRangePreset, setDateRangePreset] = useState<string>('last7days');
   const [isPomodoroHovered, setIsPomodoroHovered] = useState(false);
+  const [isTodayViewDropdownOpen, setIsTodayViewDropdownOpen] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const todayViewDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, toggleTag, togglePerson, setShowCompleted, setCompletedTasksCutoffDate, setShowCompletedOnly, setCompletedDateRange, setShowOverdueOnly, clearFilters, searchQuery } =
+  const { selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, toggleTag, togglePerson, setShowCompleted, setCompletedTasksCutoffDate, setShowCompletedOnly, setCompletedDateRange, setShowOverdueOnly, clearFilters, searchQuery, showTodayView, todayViewDaysAhead, todayViewComponents, setShowTodayView, setTodayViewDaysAhead, toggleTodayViewComponent } =
     useUIStore();
   const tags = useTaskStore((state) => state.tags);
   const people = useTaskStore((state) => state.people);
 
-  const hasActiveFilters = searchQuery || selectedTags.length > 0 || selectedPeople.length > 0 || !showCompleted || showCompletedOnly || showOverdueOnly;
+  const hasActiveFilters = searchQuery || selectedTags.length > 0 || selectedPeople.length > 0 || !showCompleted || showCompletedOnly || showOverdueOnly || showTodayView;
   const filterCount = selectedTags.length +
     selectedPeople.length +
     (searchQuery ? 1 : 0) +
     (showCompleted ? 0 : 1) +
     (showCompletedOnly ? 1 : 0) +
-    (showOverdueOnly ? 1 : 0);
+    (showOverdueOnly ? 1 : 0) +
+    (showTodayView ? 1 : 0);
 
   // Helper function to calculate date range based on preset
   const getDateRangeForPreset = (preset: string): { start: Date; end: Date } => {
@@ -124,6 +127,20 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
     }
   }, [isToolsMenuOpen]);
 
+  // Close today's view dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (todayViewDropdownRef.current && !todayViewDropdownRef.current.contains(event.target as Node)) {
+        setIsTodayViewDropdownOpen(false);
+      }
+    };
+
+    if (isTodayViewDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isTodayViewDropdownOpen]);
+
   return (
     <>
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -180,6 +197,152 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
             <div className="flex-1 flex items-center gap-2 max-w-2xl">
               <div className="flex-1">
                 <SearchBar />
+              </div>
+
+              {/* Today's View Button */}
+              <div className="relative" ref={todayViewDropdownRef}>
+                <button
+                  onClick={() => setIsTodayViewDropdownOpen(!isTodayViewDropdownOpen)}
+                  className={`
+                    px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium whitespace-nowrap
+                    ${
+                      showTodayView
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }
+                  `}
+                  aria-label="Today's view"
+                  title="Today's view - Quick access to overdue, due soon, and starred tasks"
+                >
+                  <Calendar size={18} />
+                  <span>Today</span>
+                  {showTodayView && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs">
+                      {todayViewDaysAhead}d
+                    </span>
+                  )}
+                </button>
+
+                {/* Today's View Dropdown Panel */}
+                {isTodayViewDropdownOpen && (
+                  <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                    <div className="p-4 space-y-4">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Today's View
+                        </h3>
+                        {showTodayView && (
+                          <button
+                            onClick={() => {
+                              setShowTodayView(false);
+                              setIsTodayViewDropdownOpen(false);
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                          >
+                            <X size={14} />
+                            Turn off
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Enable/Disable Toggle */}
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={showTodayView}
+                          onChange={(e) => setShowTodayView(e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Show today's view
+                        </span>
+                      </label>
+
+                      {/* Component Toggles (shown only when enabled) */}
+                      {showTodayView && (
+                        <>
+                          <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2">
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                              Show tasks that are:
+                            </label>
+
+                            {/* Overdue Component */}
+                            <label className="flex items-center gap-2 cursor-pointer ml-2">
+                              <input
+                                type="checkbox"
+                                checked={todayViewComponents.showOverdue}
+                                onChange={() => toggleTodayViewComponent('showOverdue')}
+                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">
+                                Overdue (past due date)
+                              </span>
+                            </label>
+
+                            {/* Due Soon Component */}
+                            <label className="flex items-center gap-2 cursor-pointer ml-2">
+                              <input
+                                type="checkbox"
+                                checked={todayViewComponents.showDueSoon}
+                                onChange={() => toggleTodayViewComponent('showDueSoon')}
+                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
+                              />
+                              <div className="flex-1">
+                                <span className="text-sm text-gray-700 dark:text-gray-300">
+                                  Due soon (today or within {todayViewDaysAhead} days)
+                                </span>
+                              </div>
+                            </label>
+
+                            {/* Starred Component */}
+                            <label className="flex items-center gap-2 cursor-pointer ml-2">
+                              <input
+                                type="checkbox"
+                                checked={todayViewComponents.showStarred}
+                                onChange={() => toggleTodayViewComponent('showStarred')}
+                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">
+                                Starred (all starred tasks)
+                              </span>
+                            </label>
+                          </div>
+
+                          {/* Days Ahead Selector */}
+                          <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                              Look ahead
+                            </label>
+                            <div className="grid grid-cols-5 gap-2">
+                              {[1, 3, 7, 14, 30].map((days) => (
+                                <button
+                                  key={days}
+                                  onClick={() => setTodayViewDaysAhead(days)}
+                                  className={`
+                                    px-2 py-1.5 text-sm rounded transition-colors
+                                    ${
+                                      todayViewDaysAhead === days
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }
+                                  `}
+                                >
+                                  {days}d
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Helper Text */}
+                          <div className="pt-2 text-xs text-gray-500 dark:text-gray-400">
+                            Tasks matching any enabled component will be shown. This filter works alongside your other active filters.
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Filter Dropdown Button */}

@@ -52,6 +52,20 @@ interface UIStore extends FilterState {
   setDateRange: (range?: { start: Date; end: Date }) => void;
   clearFilters: () => void;
 
+  // Today's view state
+  showTodayView: boolean;
+  todayViewDaysAhead: number; // 1, 3, 7, 14, or 30
+  todayViewComponents: {
+    showOverdue: boolean;
+    showDueSoon: boolean;
+    showStarred: boolean;
+  };
+
+  // Today's view actions
+  setShowTodayView: (enabled: boolean) => void;
+  setTodayViewDaysAhead: (days: number) => void;
+  toggleTodayViewComponent: (component: 'showOverdue' | 'showDueSoon' | 'showStarred') => void;
+
   // Pomodoro state
   isPomodoroOpen: boolean;
   pomodoroState: PomodoroState;
@@ -126,6 +140,15 @@ export const useUIStore = create<UIStore>()(
         [QuadrantTypeEnum.NOT_URGENT_NOT_IMPORTANT]: false,
       },
       dateRange: undefined,
+
+      // Today's view initial state
+      showTodayView: false,
+      todayViewDaysAhead: 7,
+      todayViewComponents: {
+        showOverdue: true,
+        showDueSoon: true,
+        showStarred: true,
+      },
 
       // Pomodoro initial state
       isPomodoroOpen: false,
@@ -240,6 +263,19 @@ export const useUIStore = create<UIStore>()(
 
       setDateRange: (range) => set({ dateRange: range }),
 
+      // Today's view actions
+      setShowTodayView: (enabled) => set({ showTodayView: enabled }),
+
+      setTodayViewDaysAhead: (days) => set({ todayViewDaysAhead: days }),
+
+      toggleTodayViewComponent: (component) =>
+        set((state) => ({
+          todayViewComponents: {
+            ...state.todayViewComponents,
+            [component]: !state.todayViewComponents[component],
+          },
+        })),
+
       clearFilters: () =>
         set({
           searchQuery: '',
@@ -251,6 +287,7 @@ export const useUIStore = create<UIStore>()(
           completedDateRange: null,
           showOverdueOnly: false,
           dateRange: undefined,
+          showTodayView: false,
         }),
 
       // History retention action
@@ -367,6 +404,9 @@ export const useUIStore = create<UIStore>()(
         exportReminderFrequencyDays: state.exportReminderFrequencyDays,
         lastExportReminderDismissed: state.lastExportReminderDismissed,
         exportReminderSnoozedUntil: state.exportReminderSnoozedUntil,
+        showTodayView: state.showTodayView,
+        todayViewDaysAhead: state.todayViewDaysAhead,
+        todayViewComponents: state.todayViewComponents,
       }),
       merge: (persistedState: Record<string, unknown>, currentState) => ({
         ...currentState,
@@ -392,6 +432,13 @@ export const useUIStore = create<UIStore>()(
         exportReminderSnoozedUntil: persistedState?.exportReminderSnoozedUntil
           ? new Date(persistedState.exportReminderSnoozedUntil)
           : null,
+        showTodayView: persistedState?.showTodayView ?? false,
+        todayViewDaysAhead: persistedState?.todayViewDaysAhead ?? 7,
+        todayViewComponents: persistedState?.todayViewComponents ?? {
+          showOverdue: true,
+          showDueSoon: true,
+          showStarred: true,
+        },
       }),
     }
   )
