@@ -25,7 +25,9 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
 
         if (keyMatch && modifierMatch && shiftMatch) {
           // Don't trigger shortcuts in input fields (except for Escape and specific ones)
-          if (isInput && event.key !== 'Escape' && event.key !== 'k') continue;
+          // Allow space shortcuts with modifiers (Ctrl+Space, Ctrl+Shift+Space)
+          const isSpaceWithModifier = event.key === ' ' && (event.ctrlKey || event.metaKey);
+          if (isInput && event.key !== 'Escape' && event.key !== 'k' && !isSpaceWithModifier) continue;
 
           event.preventDefault();
           shortcut.action();

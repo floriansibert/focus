@@ -45,6 +45,23 @@ export function Matrix() {
     return () => window.removeEventListener('openTaskModal', handleOpenTaskModal);
   }, []);
 
+  // Listen for Ctrl+Shift+Space to create subtask for selected task
+  useEffect(() => {
+    const handleCreateSubtask = () => {
+      if (focusedQuadrant && editingTask) {
+        setEditingTask(undefined);
+        setSelectedQuadrant(null);
+        setDefaultParentTaskId(editingTask.id);
+        setIsModalOpen(true);
+      } else if (focusedQuadrant && !editingTask) {
+        toast.error('Please select a task first to add a subtask');
+      }
+    };
+
+    window.addEventListener('createSubtaskForSelectedTask', handleCreateSubtask);
+    return () => window.removeEventListener('createSubtaskForSelectedTask', handleCreateSubtask);
+  }, [focusedQuadrant, editingTask]);
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingTask(undefined);

@@ -137,6 +137,28 @@ function App() {
       },
     },
     {
+      key: ' ',
+      ctrl: true,
+      description: 'Create task in focused quadrant',
+      action: () => {
+        if (focusedQuadrant) {
+          setActiveView('matrix');
+          window.dispatchEvent(new CustomEvent('openTaskModal', { detail: { quadrant: focusedQuadrant } }));
+        }
+      },
+    },
+    {
+      key: ' ',
+      ctrl: true,
+      shift: true,
+      description: 'Create subtask for selected task',
+      action: () => {
+        if (focusedQuadrant) {
+          window.dispatchEvent(new CustomEvent('createSubtaskForSelectedTask'));
+        }
+      },
+    },
+    {
       key: 'd',
       ctrl: true,
       description: 'Toggle dark mode',
