@@ -65,7 +65,7 @@ interface UIStore extends FilterState {
   };
 
   // Completed view state
-  completedViewTimeframe: 'today' | 'yesterday' | 'thisweek' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom';
+  completedViewTimeframe: 'today' | 'yesterday' | 'thisweek' | 'thismonth' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom';
   completedViewCustomRange: { start: Date; end: Date } | null;
 
   // Filter mode actions

@@ -35,8 +35,30 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
   const toolsMenuRef = useRef<HTMLDivElement>(null);
   const todayViewDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, completedDateRange, completedLookbackDays, toggleTag, togglePerson, setShowCompleted, setCompletedTasksCutoffDate, setCompletedDateRange, setCompletedLookbackDays, clearFilters, searchQuery, activeFilterMode, todayViewDaysAhead, todayViewComponents, completedViewTimeframe, completedViewCustomRange, setActiveFilterMode, setTodayViewDaysAhead, toggleTodayViewComponent, setCompletedViewTimeframe, setCompletedViewCustomRange } =
-    useUIStore();
+  const {
+    selectedTags,
+    selectedPeople,
+    showCompleted,
+    completedTasksCutoffDate,
+    completedDateRange,
+    completedLookbackDays,
+    toggleTag,
+    togglePerson,
+    setCompletedDateRange,
+    setCompletedLookbackDays,
+    clearFilters,
+    searchQuery,
+    activeFilterMode,
+    todayViewDaysAhead,
+    todayViewComponents,
+    completedViewTimeframe,
+    completedViewCustomRange,
+    setActiveFilterMode,
+    setTodayViewDaysAhead,
+    toggleTodayViewComponent,
+    setCompletedViewTimeframe,
+    setCompletedViewCustomRange,
+  } = useUIStore();
   const tags = useTaskStore((state) => state.tags);
   const people = useTaskStore((state) => state.people);
 
@@ -533,7 +555,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                       if (date && (completedViewCustomRange?.end || completedDateRange?.end)) {
                                         const newRange = {
                                           start: date,
-                                          end: completedViewCustomRange?.end || completedDateRange!.end
+                                          end: completedViewCustomRange?.end || completedDateRange?.end || new Date()
                                         };
                                         setCompletedViewTimeframe('custom');
                                         setCompletedViewCustomRange(newRange);
@@ -556,7 +578,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                     onChange={(date) => {
                                       if (date && (completedViewCustomRange?.start || completedDateRange?.start)) {
                                         const newRange = {
-                                          start: completedViewCustomRange?.start || completedDateRange!.start,
+                                          start: completedViewCustomRange?.start || completedDateRange?.start || new Date(),
                                           end: date
                                         };
                                         setCompletedViewTimeframe('custom');
@@ -565,7 +587,6 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                     }}
                                     label=""
                                     max={new Date()}
-                                    min={completedViewCustomRange?.start || completedDateRange?.start}
                                   />
                                 </div>
                               </div>
@@ -575,7 +596,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                           {/* Current Range Display */}
                           {completedDateRange && (
                             <div className="pt-2 text-xs text-gray-500 dark:text-gray-400">
-                              Showing tasks completed from {new Date(completedDateRange.start).toLocaleDateString()} to {new Date(completedDateRange.end).toLocaleDateString()}
+                              Showing tasks completed from {completedDateRange.start.toLocaleDateString()} to {completedDateRange.end.toLocaleDateString()}
                             </div>
                           )}
 
