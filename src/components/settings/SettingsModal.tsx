@@ -40,12 +40,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     { value: 90, label: 'Quarterly', description: 'Remind me every 90 days' },
   ];
 
-  const daysAheadOptions = [
+  const daysAheadOptions: Array<{ value: number | null; label: string; description: string }> = [
+    { value: 0, label: 'Today only', description: 'Show only tasks due today' },
     { value: 1, label: '1 day', description: 'Show tasks due today or tomorrow' },
     { value: 3, label: '3 days', description: 'Show tasks due within 3 days' },
     { value: 7, label: '7 days', description: 'Show tasks due within a week' },
     { value: 14, label: '14 days', description: 'Show tasks due within 2 weeks' },
     { value: 30, label: '30 days', description: 'Show tasks due within a month' },
+    { value: null, label: 'Any time (∞)', description: 'Show all tasks with due dates' },
   ];
 
   const categories = [
@@ -107,7 +109,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <div className="space-y-2">
                 {daysAheadOptions.map((option) => (
                   <label
-                    key={option.value}
+                    key={option.value ?? 'infinity'}
                     className={`
                       flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer
                       transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50

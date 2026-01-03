@@ -384,6 +384,21 @@ export function getTwoWeeksAgoRange(): { start: Date; end: Date } {
 }
 
 /**
+ * Get date range for "this month" (first to last day of current month)
+ */
+export function getThisMonthRange(): { start: Date; end: Date } {
+  const now = new Date();
+
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+/**
  * Get date range for "last month" (first to last day of previous month)
  */
 export function getLastMonthRange(): { start: Date; end: Date } {
@@ -402,7 +417,7 @@ export function getLastMonthRange(): { start: Date; end: Date } {
  * Calculate date range based on completed view timeframe
  */
 export function calculateCompletedViewDateRange(
-  timeframe: 'today' | 'yesterday' | 'thisweek' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom',
+  timeframe: 'today' | 'yesterday' | 'thisweek' | 'thismonth' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom',
   customRange: { start: Date; end: Date } | null
 ): { start: Date; end: Date } {
   switch (timeframe) {
@@ -412,6 +427,8 @@ export function calculateCompletedViewDateRange(
       return getYesterdayRange();
     case 'thisweek':
       return getThisWeekRange();
+    case 'thismonth':
+      return getThisMonthRange();
     case 'lastweek':
       return getLastWeekRange();
     case '2weeksago':
@@ -438,6 +455,8 @@ export function formatCompletedViewTimeframe(timeframe: string): string {
       return 'Yesterday';
     case 'thisweek':
       return 'This Week';
+    case 'thismonth':
+      return 'This Month';
     case 'lastweek':
       return 'Last Week';
     case '2weeksago':

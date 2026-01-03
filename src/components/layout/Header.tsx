@@ -29,6 +29,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [isPomodoroHovered, setIsPomodoroHovered] = useState(false);
   const [isTodayViewDropdownOpen, setIsTodayViewDropdownOpen] = useState(false);
+  const [isCustomPeriodEnabled, setIsCustomPeriodEnabled] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
@@ -188,7 +189,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
 
                   {activeFilterMode === ViewMode.TODAY && (
                     <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs">
-                      {todayViewDaysAhead}d
+                      {todayViewDaysAhead === null ? '∞' : `${todayViewDaysAhead}d`}
                     </span>
                   )}
                   {activeFilterMode === ViewMode.COMPLETED && (
@@ -200,7 +201,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
 
                 {/* Filter Mode Dropdown Panel */}
                 {isTodayViewDropdownOpen && (
-                  <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                  <div className="absolute right-0 mt-2 w-[38rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                     <div className="p-4 space-y-4">
                       {/* Mode Selector */}
                       <div>
@@ -285,7 +286,13 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                 />
                                 <div className="flex-1">
                                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                                    Due soon (today or within {todayViewDaysAhead} days)
+                                    Due soon ({todayViewDaysAhead === 0
+                                      ? 'today only'
+                                      : todayViewDaysAhead === 1
+                                        ? 'today or tomorrow'
+                                        : todayViewDaysAhead === null
+                                          ? 'any time'
+                                          : `today or within ${todayViewDaysAhead} days`})
                                   </span>
                                 </div>
                               </label>
@@ -310,13 +317,13 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                               Look ahead
                             </label>
-                            <div className="grid grid-cols-5 gap-2">
-                              {[1, 3, 7, 14, 30].map((days) => (
+                            <div className="grid grid-cols-7 gap-2">
+                              {[0, 1, 3, 7, 14, 30].map((days) => (
                                 <button
                                   key={days}
                                   onClick={() => setTodayViewDaysAhead(days)}
                                   className={`
-                                    px-2 py-1.5 text-sm rounded transition-colors
+                                    px-2 py-1.5 text-xs rounded transition-colors
                                     ${
                                       todayViewDaysAhead === days
                                         ? 'bg-blue-600 text-white'
@@ -327,6 +334,20 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                   {days}d
                                 </button>
                               ))}
+                              {/* Infinity button */}
+                              <button
+                                onClick={() => setTodayViewDaysAhead(null)}
+                                className={`
+                                  px-2 py-1.5 text-xs rounded transition-colors
+                                  ${
+                                    todayViewDaysAhead === null
+                                      ? 'bg-blue-600 text-white'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                  }
+                                `}
+                              >
+                                ∞
+                              </button>
                             </div>
                           </div>
 
@@ -347,12 +368,13 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
 
                             {/* Timeframe selector buttons */}
                             <div className="space-y-2">
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="grid grid-cols-4 gap-2">
                                 <button
                                   onClick={() => {
                                     setCompletedViewTimeframe('today');
                                     const range = calculateCompletedViewDateRange('today', null);
                                     setCompletedDateRange(range);
+                                    setIsCustomPeriodEnabled(false);
                                   }}
                                   className={`
                                     px-3 py-2 text-sm rounded transition-colors
@@ -370,6 +392,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                     setCompletedViewTimeframe('yesterday');
                                     const range = calculateCompletedViewDateRange('yesterday', null);
                                     setCompletedDateRange(range);
+                                    setIsCustomPeriodEnabled(false);
                                   }}
                                   className={`
                                     px-3 py-2 text-sm rounded transition-colors
@@ -382,14 +405,12 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                 >
                                   Yesterday
                                 </button>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-2">
                                 <button
                                   onClick={() => {
                                     setCompletedViewTimeframe('thisweek');
                                     const range = calculateCompletedViewDateRange('thisweek', null);
                                     setCompletedDateRange(range);
+                                    setIsCustomPeriodEnabled(false);
                                   }}
                                   className={`
                                     px-3 py-2 text-sm rounded transition-colors
@@ -404,9 +425,31 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                 </button>
                                 <button
                                   onClick={() => {
+                                    setCompletedViewTimeframe('thismonth');
+                                    const range = calculateCompletedViewDateRange('thismonth', null);
+                                    setCompletedDateRange(range);
+                                    setIsCustomPeriodEnabled(false);
+                                  }}
+                                  className={`
+                                    px-3 py-2 text-sm rounded transition-colors
+                                    ${
+                                      completedViewTimeframe === 'thismonth'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }
+                                  `}
+                                >
+                                  This Month
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-4 gap-2">
+                                <button
+                                  onClick={() => {
                                     setCompletedViewTimeframe('lastweek');
                                     const range = calculateCompletedViewDateRange('lastweek', null);
                                     setCompletedDateRange(range);
+                                    setIsCustomPeriodEnabled(false);
                                   }}
                                   className={`
                                     px-3 py-2 text-sm rounded transition-colors
@@ -419,14 +462,12 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                 >
                                   Last Week
                                 </button>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-2">
                                 <button
                                   onClick={() => {
                                     setCompletedViewTimeframe('2weeksago');
                                     const range = calculateCompletedViewDateRange('2weeksago', null);
                                     setCompletedDateRange(range);
+                                    setIsCustomPeriodEnabled(false);
                                   }}
                                   className={`
                                     px-3 py-2 text-sm rounded transition-colors
@@ -444,6 +485,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                     setCompletedViewTimeframe('lastmonth');
                                     const range = calculateCompletedViewDateRange('lastmonth', null);
                                     setCompletedDateRange(range);
+                                    setIsCustomPeriodEnabled(false);
                                   }}
                                   className={`
                                     px-3 py-2 text-sm rounded transition-colors
@@ -456,67 +498,81 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                 >
                                   Last Month
                                 </button>
+                                <button
+                                  onClick={() => {
+                                    setCompletedViewTimeframe('custom');
+                                    setIsCustomPeriodEnabled(true);
+                                  }}
+                                  className={`
+                                    px-3 py-2 text-sm rounded transition-colors
+                                    ${
+                                      completedViewTimeframe === 'custom'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }
+                                  `}
+                                >
+                                  Custom
+                                </button>
                               </div>
                             </div>
                           </div>
 
                           {/* Custom Date Range */}
-                          <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                              Custom Period
-                            </label>
+                          {isCustomPeriodEnabled && (
+                            <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                              <div className="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                  <label className="flex items-center gap-1 mb-1">
+                                    <Calendar size={12} className="text-gray-400 dark:text-gray-500" />
+                                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                                      Start
+                                    </span>
+                                  </label>
+                                  <DatePicker
+                                    value={completedViewCustomRange?.start || completedDateRange?.start}
+                                    onChange={(date) => {
+                                      if (date && (completedViewCustomRange?.end || completedDateRange?.end)) {
+                                        const newRange = {
+                                          start: date,
+                                          end: completedViewCustomRange?.end || completedDateRange!.end
+                                        };
+                                        setCompletedViewTimeframe('custom');
+                                        setCompletedViewCustomRange(newRange);
+                                      }
+                                    }}
+                                    label=""
+                                    max={completedViewCustomRange?.end || completedDateRange?.end || new Date()}
+                                  />
+                                </div>
 
-                            <div className="grid grid-cols-2 gap-2 mb-2">
-                              <div>
-                                <label className="flex items-center gap-1 mb-1">
-                                  <Calendar size={12} className="text-gray-400 dark:text-gray-500" />
-                                  <span className="text-xs text-gray-600 dark:text-gray-400">
-                                    Start
-                                  </span>
-                                </label>
-                                <DatePicker
-                                  value={completedViewCustomRange?.start || completedDateRange?.start}
-                                  onChange={(date) => {
-                                    if (date && (completedViewCustomRange?.end || completedDateRange?.end)) {
-                                      const newRange = {
-                                        start: date,
-                                        end: completedViewCustomRange?.end || completedDateRange!.end
-                                      };
-                                      setCompletedViewTimeframe('custom');
-                                      setCompletedViewCustomRange(newRange);
-                                    }
-                                  }}
-                                  label=""
-                                  max={completedViewCustomRange?.end || completedDateRange?.end || new Date()}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="flex items-center gap-1 mb-1">
-                                  <Calendar size={12} className="text-gray-400 dark:text-gray-500" />
-                                  <span className="text-xs text-gray-600 dark:text-gray-400">
-                                    End
-                                  </span>
-                                </label>
-                                <DatePicker
-                                  value={completedViewCustomRange?.end || completedDateRange?.end}
-                                  onChange={(date) => {
-                                    if (date && (completedViewCustomRange?.start || completedDateRange?.start)) {
-                                      const newRange = {
-                                        start: completedViewCustomRange?.start || completedDateRange!.start,
-                                        end: date
-                                      };
-                                      setCompletedViewTimeframe('custom');
-                                      setCompletedViewCustomRange(newRange);
-                                    }
-                                  }}
-                                  label=""
-                                  max={new Date()}
-                                  min={completedViewCustomRange?.start || completedDateRange?.start}
-                                />
+                                <div>
+                                  <label className="flex items-center gap-1 mb-1">
+                                    <Calendar size={12} className="text-gray-400 dark:text-gray-500" />
+                                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                                      End
+                                    </span>
+                                  </label>
+                                  <DatePicker
+                                    value={completedViewCustomRange?.end || completedDateRange?.end}
+                                    onChange={(date) => {
+                                      if (date && (completedViewCustomRange?.start || completedDateRange?.start)) {
+                                        const newRange = {
+                                          start: completedViewCustomRange?.start || completedDateRange!.start,
+                                          end: date
+                                        };
+                                        setCompletedViewTimeframe('custom');
+                                        setCompletedViewCustomRange(newRange);
+                                      }
+                                    }}
+                                    label=""
+                                    max={new Date()}
+                                    min={completedViewCustomRange?.start || completedDateRange?.start}
+                                  />
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
 
                           {/* Current Range Display */}
                           {completedDateRange && (
@@ -568,7 +624,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
 
                 {/* Filter Dropdown Panel */}
                 {isFilterDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-[28rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                  <div className="absolute right-0 mt-2 w-[40rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                     <div className="p-4 space-y-4">
                       {/* Header */}
                       <div className="flex items-center justify-between">

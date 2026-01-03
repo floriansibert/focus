@@ -57,7 +57,7 @@ interface UIStore extends FilterState {
   activeFilterMode: ViewMode | null;
 
   // Today's view state
-  todayViewDaysAhead: number; // 1, 3, 7, 14, or 30
+  todayViewDaysAhead: number | null; // 0-30 days or null (infinity)
   todayViewComponents: {
     showOverdue: boolean;
     showDueSoon: boolean;
@@ -70,7 +70,7 @@ interface UIStore extends FilterState {
 
   // Filter mode actions
   setActiveFilterMode: (mode: ViewMode | null) => void;
-  setTodayViewDaysAhead: (days: number) => void;
+  setTodayViewDaysAhead: (days: number | null) => void;
   toggleTodayViewComponent: (component: 'showOverdue' | 'showDueSoon' | 'showStarred') => void;
   setCompletedViewTimeframe: (timeframe: 'today' | 'yesterday' | 'thisweek' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom') => void;
   setCompletedViewCustomRange: (range: { start: Date; end: Date } | null) => void;

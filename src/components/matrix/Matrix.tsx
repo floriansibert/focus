@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
   DndContext,
@@ -19,6 +19,7 @@ import { TaskCard } from './TaskCard';
 import { TaskModal } from '../task/TaskModal';
 import { TaskSidePanel } from '../task/TaskSidePanel';
 import { isSubtask, canHaveSubtasks } from '../../utils/taskHelpers';
+import { useTaskFilters } from '../../hooks/useTaskFilters';
 
 export function Matrix() {
   const { tasks, moveTask, moveTaskWithSubtasks, reorderSubtasks, moveSubtaskToParent, toggleStar, isLoading } = useTaskStore();
@@ -29,6 +30,13 @@ export function Matrix() {
   const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantType | null>(null);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [defaultParentTaskId, setDefaultParentTaskId] = useState<string | undefined>(undefined);
+
+  // Get filtered tasks for the focused quadrant (respects all active filters)
+  const quadrantTasksForFocus = useMemo(
+    () => focusedQuadrant ? tasks.filter((task) => task.quadrant === focusedQuadrant) : [],
+    [tasks, focusedQuadrant]
+  );
+  const filteredTasksForFocus = useTaskFilters(quadrantTasksForFocus, focusedQuadrant || undefined);
 
   // Listen for keyboard shortcut events to open task modal
   useEffect(() => {
@@ -270,8 +278,8 @@ export function Matrix() {
     const visibleTasks: Task[] = [];
 
     // Get top-level tasks sorted by order (exclude subtasks and templates)
-    const topLevelTasks = tasks
-      .filter((t) => t.quadrant === focusedQuadrant && !isSubtask(t) && t.taskType !== TaskType.RECURRING_PARENT)
+    const topLevelTasks = filteredTasksForFocus
+      .filter((t) => !isSubtask(t) && t.taskType !== TaskType.RECURRING_PARENT)
       .sort((a, b) => a.order - b.order);
 
     // Build visible task list respecting hierarchy
@@ -280,7 +288,7 @@ export function Matrix() {
 
       // Add subtasks if parent is not collapsed
       if (!collapsedTasks.has(parentTask.id)) {
-        const subtasks = tasks
+        const subtasks = filteredTasksForFocus
           .filter((t) => t.parentTaskId === parentTask.id && t.taskType === TaskType.SUBTASK)
           .sort((a, b) => a.order - b.order);
         visibleTasks.push(...subtasks);

@@ -71,8 +71,14 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
         now.setHours(0, 0, 0, 0); // Start of today
 
         const futureDate = new Date(now);
-        futureDate.setDate(futureDate.getDate() + todayViewDaysAhead);
-        futureDate.setHours(23, 59, 59, 999); // End of future day
+        if (todayViewDaysAhead === null) {
+          // Infinity - set to far future date (year 9999)
+          futureDate.setFullYear(9999, 11, 31);
+          futureDate.setHours(23, 59, 59, 999);
+        } else {
+          futureDate.setDate(futureDate.getDate() + todayViewDaysAhead);
+          futureDate.setHours(23, 59, 59, 999); // End of future day
+        }
 
         let matchesTodayView = false;
 
