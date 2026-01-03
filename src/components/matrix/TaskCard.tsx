@@ -1,4 +1,4 @@
-import { useMemo, memo, useState } from 'react';
+import { useMemo, memo, useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, Trash2, Repeat, CornerDownRight, Plus, Star, Clock, Link } from 'lucide-react';
@@ -31,6 +31,7 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, onAddSubtask, p
   const allPeople = useTaskStore((state) => state.people);
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: taskId,
@@ -40,6 +41,17 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, onAddSubtask, p
       parentTaskId: parentTaskId,
     },
   });
+
+  // Auto-scroll to selected task in focus mode
+  useEffect(() => {
+    if (isSelected && scrollRef.current) {
+      scrollRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest'
+      });
+    }
+  }, [isSelected]);
 
   const tags = useMemo(
     () => (task ? allTags.filter((tag) => task.tags.includes(tag.id)).sort((a, b) => a.name.localeCompare(b.name)) : []),
@@ -95,7 +107,10 @@ export const TaskCard = memo(function TaskCard({ taskId, onEdit, onAddSubtask, p
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node); // dnd-kit ref
+        scrollRef.current = node; // scroll ref
+      }}
       style={style}
       className={`
         group relative
