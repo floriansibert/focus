@@ -368,7 +368,8 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
 
                             {/* Timeframe selector buttons */}
                             <div className="space-y-2">
-                              <div className="grid grid-cols-4 gap-2">
+                              {/* Row 1: Today, Yesterday */}
+                              <div className="grid grid-cols-2 gap-2">
                                 <button
                                   onClick={() => {
                                     setCompletedViewTimeframe('today');
@@ -405,6 +406,10 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                 >
                                   Yesterday
                                 </button>
+                              </div>
+
+                              {/* Row 2: This Week, Last Week */}
+                              <div className="grid grid-cols-2 gap-2">
                                 <button
                                   onClick={() => {
                                     setCompletedViewTimeframe('thisweek');
@@ -425,27 +430,6 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                 </button>
                                 <button
                                   onClick={() => {
-                                    setCompletedViewTimeframe('thismonth');
-                                    const range = calculateCompletedViewDateRange('thismonth', null);
-                                    setCompletedDateRange(range);
-                                    setIsCustomPeriodEnabled(false);
-                                  }}
-                                  className={`
-                                    px-3 py-2 text-sm rounded transition-colors
-                                    ${
-                                      completedViewTimeframe === 'thismonth'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                    }
-                                  `}
-                                >
-                                  This Month
-                                </button>
-                              </div>
-
-                              <div className="grid grid-cols-4 gap-2">
-                                <button
-                                  onClick={() => {
                                     setCompletedViewTimeframe('lastweek');
                                     const range = calculateCompletedViewDateRange('lastweek', null);
                                     setCompletedDateRange(range);
@@ -462,23 +446,27 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                 >
                                   Last Week
                                 </button>
+                              </div>
+
+                              {/* Row 3: This Month, Last Month */}
+                              <div className="grid grid-cols-2 gap-2">
                                 <button
                                   onClick={() => {
-                                    setCompletedViewTimeframe('2weeksago');
-                                    const range = calculateCompletedViewDateRange('2weeksago', null);
+                                    setCompletedViewTimeframe('thismonth');
+                                    const range = calculateCompletedViewDateRange('thismonth', null);
                                     setCompletedDateRange(range);
                                     setIsCustomPeriodEnabled(false);
                                   }}
                                   className={`
                                     px-3 py-2 text-sm rounded transition-colors
                                     ${
-                                      completedViewTimeframe === '2weeksago'
+                                      completedViewTimeframe === 'thismonth'
                                         ? 'bg-blue-600 text-white'
                                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                     }
                                   `}
                                 >
-                                  2 Weeks Ago
+                                  This Month
                                 </button>
                                 <button
                                   onClick={() => {
@@ -498,10 +486,20 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                                 >
                                   Last Month
                                 </button>
+                              </div>
+
+                              {/* Row 4: Custom */}
+                              <div className="grid grid-cols-1 gap-2">
                                 <button
                                   onClick={() => {
                                     setCompletedViewTimeframe('custom');
                                     setIsCustomPeriodEnabled(true);
+                                    // Use existing custom range or default to last week
+                                    const range = completedViewCustomRange || calculateCompletedViewDateRange('lastweek', null);
+                                    setCompletedDateRange(range);
+                                    if (!completedViewCustomRange) {
+                                      setCompletedViewCustomRange(range);
+                                    }
                                   }}
                                   className={`
                                     px-3 py-2 text-sm rounded transition-colors
