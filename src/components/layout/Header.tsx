@@ -9,6 +9,8 @@ import { Badge } from '../ui/Badge';
 import { PersonBadge } from '../ui/PersonBadge';
 import { DatePicker } from '../ui/DatePicker';
 import { formatTime } from '../../utils/pomodoro';
+import { ViewMode } from '../../types/task';
+import { calculateCompletedViewDateRange, formatCompletedViewTimeframe } from '../../utils/date';
 
 interface HeaderProps {
   onExport?: () => void;
@@ -25,7 +27,6 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
-  const [dateRangePreset, setDateRangePreset] = useState<string>('last7days');
   const [isPomodoroHovered, setIsPomodoroHovered] = useState(false);
   const [isTodayViewDropdownOpen, setIsTodayViewDropdownOpen] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
@@ -33,57 +34,17 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
   const toolsMenuRef = useRef<HTMLDivElement>(null);
   const todayViewDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, toggleTag, togglePerson, setShowCompleted, setCompletedTasksCutoffDate, setShowCompletedOnly, setCompletedDateRange, setShowOverdueOnly, clearFilters, searchQuery, showTodayView, todayViewDaysAhead, todayViewComponents, setShowTodayView, setTodayViewDaysAhead, toggleTodayViewComponent } =
+  const { selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, completedDateRange, completedLookbackDays, toggleTag, togglePerson, setShowCompleted, setCompletedTasksCutoffDate, setCompletedDateRange, setCompletedLookbackDays, clearFilters, searchQuery, activeFilterMode, todayViewDaysAhead, todayViewComponents, completedViewTimeframe, completedViewCustomRange, setActiveFilterMode, setTodayViewDaysAhead, toggleTodayViewComponent, setCompletedViewTimeframe, setCompletedViewCustomRange } =
     useUIStore();
   const tags = useTaskStore((state) => state.tags);
   const people = useTaskStore((state) => state.people);
 
-  const hasActiveFilters = searchQuery || selectedTags.length > 0 || selectedPeople.length > 0 || !showCompleted || showCompletedOnly || showOverdueOnly || showTodayView;
+  const hasActiveFilters = searchQuery || selectedTags.length > 0 || selectedPeople.length > 0 || !showCompleted || activeFilterMode !== null;
   const filterCount = selectedTags.length +
     selectedPeople.length +
     (searchQuery ? 1 : 0) +
     (showCompleted ? 0 : 1) +
-    (showCompletedOnly ? 1 : 0) +
-    (showOverdueOnly ? 1 : 0) +
-    (showTodayView ? 1 : 0);
-
-  // Helper function to calculate date range based on preset
-  const getDateRangeForPreset = (preset: string): { start: Date; end: Date } => {
-    const end = new Date();
-    const start = new Date();
-
-    switch (preset) {
-      case 'last7days':
-        start.setDate(start.getDate() - 7);
-        break;
-      case 'last30days':
-        start.setDate(start.getDate() - 30);
-        break;
-      case 'last90days':
-        start.setDate(start.getDate() - 90);
-        break;
-      case 'yeartodate':
-        start.setMonth(0, 1); // January 1st of current year
-        start.setHours(0, 0, 0, 0);
-        break;
-      case 'alltime':
-        start.setFullYear(start.getFullYear() - 10); // 10 years ago
-        break;
-      default: // custom
-        return completedDateRange || { start, end };
-    }
-
-    return { start, end };
-  };
-
-  // Handle preset selection
-  const handlePresetChange = (preset: string) => {
-    setDateRangePreset(preset);
-    if (preset !== 'custom') {
-      const range = getDateRangeForPreset(preset);
-      setCompletedDateRange(range);
-    }
-  };
+    (activeFilterMode !== null ? 1 : 0);
 
   // Close filter dropdown when clicking outside
   useEffect(() => {
@@ -199,114 +160,149 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                 <SearchBar />
               </div>
 
-              {/* Today's View Button */}
+              {/* Filter Mode Button (Today / Completed) */}
               <div className="relative" ref={todayViewDropdownRef}>
                 <button
                   onClick={() => setIsTodayViewDropdownOpen(!isTodayViewDropdownOpen)}
                   className={`
                     px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium whitespace-nowrap
                     ${
-                      showTodayView
+                      activeFilterMode !== null
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }
                   `}
-                  aria-label="Today's view"
-                  title="Today's view - Quick access to overdue, due soon, and starred tasks"
+                  aria-label="Filter view mode"
+                  title={
+                    activeFilterMode === ViewMode.TODAY
+                      ? "Today's view - Quick access to overdue, due soon, and starred tasks"
+                      : activeFilterMode === ViewMode.COMPLETED
+                      ? "Completed view - Review tasks accomplished in a timeframe"
+                      : "Filter view modes"
+                  }
                 >
                   <Calendar size={18} />
-                  <span>Today</span>
-                  {showTodayView && (
+                  {activeFilterMode === ViewMode.TODAY && <span>Today</span>}
+                  {activeFilterMode === ViewMode.COMPLETED && <span>Completed</span>}
+                  {activeFilterMode === null && <span>Plan</span>}
+
+                  {activeFilterMode === ViewMode.TODAY && (
                     <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs">
                       {todayViewDaysAhead}d
                     </span>
                   )}
+                  {activeFilterMode === ViewMode.COMPLETED && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs">
+                      {formatCompletedViewTimeframe(completedViewTimeframe).replace(' ', '')}
+                    </span>
+                  )}
                 </button>
 
-                {/* Today's View Dropdown Panel */}
+                {/* Filter Mode Dropdown Panel */}
                 {isTodayViewDropdownOpen && (
                   <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                     <div className="p-4 space-y-4">
-                      {/* Header */}
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Today's View
-                        </h3>
-                        {showTodayView && (
+                      {/* Mode Selector */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Select View Mode
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
                           <button
-                            onClick={() => {
-                              setShowTodayView(false);
-                              setIsTodayViewDropdownOpen(false);
-                            }}
-                            className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            onClick={() => setActiveFilterMode(null)}
+                            className={`
+                              px-3 py-2 text-sm rounded transition-colors
+                              ${
+                                activeFilterMode === null
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }
+                            `}
                           >
-                            <X size={14} />
-                            Turn off
+                            Plan
                           </button>
-                        )}
+                          <button
+                            onClick={() => setActiveFilterMode(ViewMode.TODAY)}
+                            className={`
+                              px-3 py-2 text-sm rounded transition-colors
+                              ${
+                                activeFilterMode === ViewMode.TODAY
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }
+                            `}
+                          >
+                            Today
+                          </button>
+                          <button
+                            onClick={() => setActiveFilterMode(ViewMode.COMPLETED)}
+                            className={`
+                              px-3 py-2 text-sm rounded transition-colors
+                              ${
+                                activeFilterMode === ViewMode.COMPLETED
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }
+                            `}
+                          >
+                            Completed
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Enable/Disable Toggle */}
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={showTodayView}
-                          onChange={(e) => setShowTodayView(e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          Show today's view
-                        </span>
-                      </label>
+                      {/* Separator */}
+                      <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
-                      {/* Component Toggles (shown only when enabled) */}
-                      {showTodayView && (
+                      {/* Today Mode Configuration */}
+                      {activeFilterMode === ViewMode.TODAY && (
                         <>
-                          <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2">
+                          <div>
                             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                               Show tasks that are:
                             </label>
 
-                            {/* Overdue Component */}
-                            <label className="flex items-center gap-2 cursor-pointer ml-2">
-                              <input
-                                type="checkbox"
-                                checked={todayViewComponents.showOverdue}
-                                onChange={() => toggleTodayViewComponent('showOverdue')}
-                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
-                              />
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
-                                Overdue (past due date)
-                              </span>
-                            </label>
-
-                            {/* Due Soon Component */}
-                            <label className="flex items-center gap-2 cursor-pointer ml-2">
-                              <input
-                                type="checkbox"
-                                checked={todayViewComponents.showDueSoon}
-                                onChange={() => toggleTodayViewComponent('showDueSoon')}
-                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
-                              />
-                              <div className="flex-1">
+                            <div className="space-y-2 ml-2">
+                              {/* Overdue Component */}
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={todayViewComponents.showOverdue}
+                                  onChange={() => toggleTodayViewComponent('showOverdue')}
+                                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
+                                />
                                 <span className="text-sm text-gray-700 dark:text-gray-300">
-                                  Due soon (today or within {todayViewDaysAhead} days)
+                                  Overdue (past due date)
                                 </span>
-                              </div>
-                            </label>
+                              </label>
 
-                            {/* Starred Component */}
-                            <label className="flex items-center gap-2 cursor-pointer ml-2">
-                              <input
-                                type="checkbox"
-                                checked={todayViewComponents.showStarred}
-                                onChange={() => toggleTodayViewComponent('showStarred')}
-                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
-                              />
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
-                                Starred (all starred tasks)
-                              </span>
-                            </label>
+                              {/* Due Soon Component */}
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={todayViewComponents.showDueSoon}
+                                  onChange={() => toggleTodayViewComponent('showDueSoon')}
+                                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
+                                />
+                                <div className="flex-1">
+                                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                                    Due soon (today or within {todayViewDaysAhead} days)
+                                  </span>
+                                </div>
+                              </label>
+
+                              {/* Starred Component */}
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={todayViewComponents.showStarred}
+                                  onChange={() => toggleTodayViewComponent('showStarred')}
+                                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">
+                                  Starred (all starred tasks)
+                                </span>
+                              </label>
+                            </div>
                           </div>
 
                           {/* Days Ahead Selector */}
@@ -336,9 +332,211 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
 
                           {/* Helper Text */}
                           <div className="pt-2 text-xs text-gray-500 dark:text-gray-400">
-                            Tasks matching any enabled component will be shown. This filter works alongside your other active filters.
+                            Tasks matching any enabled component will be shown.
                           </div>
                         </>
+                      )}
+
+                      {/* Completed Mode Configuration */}
+                      {activeFilterMode === ViewMode.COMPLETED && (
+                        <>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                              Timeframe
+                            </label>
+
+                            {/* Timeframe selector buttons */}
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  onClick={() => {
+                                    setCompletedViewTimeframe('today');
+                                    const range = calculateCompletedViewDateRange('today', null);
+                                    setCompletedDateRange(range);
+                                  }}
+                                  className={`
+                                    px-3 py-2 text-sm rounded transition-colors
+                                    ${
+                                      completedViewTimeframe === 'today'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }
+                                  `}
+                                >
+                                  Today
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCompletedViewTimeframe('yesterday');
+                                    const range = calculateCompletedViewDateRange('yesterday', null);
+                                    setCompletedDateRange(range);
+                                  }}
+                                  className={`
+                                    px-3 py-2 text-sm rounded transition-colors
+                                    ${
+                                      completedViewTimeframe === 'yesterday'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }
+                                  `}
+                                >
+                                  Yesterday
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  onClick={() => {
+                                    setCompletedViewTimeframe('thisweek');
+                                    const range = calculateCompletedViewDateRange('thisweek', null);
+                                    setCompletedDateRange(range);
+                                  }}
+                                  className={`
+                                    px-3 py-2 text-sm rounded transition-colors
+                                    ${
+                                      completedViewTimeframe === 'thisweek'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }
+                                  `}
+                                >
+                                  This Week
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCompletedViewTimeframe('lastweek');
+                                    const range = calculateCompletedViewDateRange('lastweek', null);
+                                    setCompletedDateRange(range);
+                                  }}
+                                  className={`
+                                    px-3 py-2 text-sm rounded transition-colors
+                                    ${
+                                      completedViewTimeframe === 'lastweek'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }
+                                  `}
+                                >
+                                  Last Week
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  onClick={() => {
+                                    setCompletedViewTimeframe('2weeksago');
+                                    const range = calculateCompletedViewDateRange('2weeksago', null);
+                                    setCompletedDateRange(range);
+                                  }}
+                                  className={`
+                                    px-3 py-2 text-sm rounded transition-colors
+                                    ${
+                                      completedViewTimeframe === '2weeksago'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }
+                                  `}
+                                >
+                                  2 Weeks Ago
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCompletedViewTimeframe('lastmonth');
+                                    const range = calculateCompletedViewDateRange('lastmonth', null);
+                                    setCompletedDateRange(range);
+                                  }}
+                                  className={`
+                                    px-3 py-2 text-sm rounded transition-colors
+                                    ${
+                                      completedViewTimeframe === 'lastmonth'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }
+                                  `}
+                                >
+                                  Last Month
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Custom Date Range */}
+                          <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                              Custom Period
+                            </label>
+
+                            <div className="grid grid-cols-2 gap-2 mb-2">
+                              <div>
+                                <label className="flex items-center gap-1 mb-1">
+                                  <Calendar size={12} className="text-gray-400 dark:text-gray-500" />
+                                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                                    Start
+                                  </span>
+                                </label>
+                                <DatePicker
+                                  value={completedViewCustomRange?.start || completedDateRange?.start}
+                                  onChange={(date) => {
+                                    if (date && (completedViewCustomRange?.end || completedDateRange?.end)) {
+                                      const newRange = {
+                                        start: date,
+                                        end: completedViewCustomRange?.end || completedDateRange!.end
+                                      };
+                                      setCompletedViewTimeframe('custom');
+                                      setCompletedViewCustomRange(newRange);
+                                    }
+                                  }}
+                                  label=""
+                                  max={completedViewCustomRange?.end || completedDateRange?.end || new Date()}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="flex items-center gap-1 mb-1">
+                                  <Calendar size={12} className="text-gray-400 dark:text-gray-500" />
+                                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                                    End
+                                  </span>
+                                </label>
+                                <DatePicker
+                                  value={completedViewCustomRange?.end || completedDateRange?.end}
+                                  onChange={(date) => {
+                                    if (date && (completedViewCustomRange?.start || completedDateRange?.start)) {
+                                      const newRange = {
+                                        start: completedViewCustomRange?.start || completedDateRange!.start,
+                                        end: date
+                                      };
+                                      setCompletedViewTimeframe('custom');
+                                      setCompletedViewCustomRange(newRange);
+                                    }
+                                  }}
+                                  label=""
+                                  max={new Date()}
+                                  min={completedViewCustomRange?.start || completedDateRange?.start}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Current Range Display */}
+                          {completedDateRange && (
+                            <div className="pt-2 text-xs text-gray-500 dark:text-gray-400">
+                              Showing tasks completed from {new Date(completedDateRange.start).toLocaleDateString()} to {new Date(completedDateRange.end).toLocaleDateString()}
+                            </div>
+                          )}
+
+                          {/* Helper Text */}
+                          <div className="pt-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
+                            Shows tasks completed within the selected timeframe. Parent tasks display only subtasks completed in this period.
+                          </div>
+                        </>
+                      )}
+
+                      {/* No Mode Selected State */}
+                      {activeFilterMode === null && (
+                        <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
+                          Select a view mode above to configure filters
+                        </div>
                       )}
                     </div>
                   </div>
@@ -465,180 +663,124 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                         )}
                       </div>
 
-                      {/* Show Overdue Only Toggle */}
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={showOverdueOnly}
-                          onChange={(e) => setShowOverdueOnly(e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          Show overdue tasks only
-                        </span>
-                      </label>
-
                       {/* Separator */}
                       <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
-                      {/* Show Completed Toggle */}
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={showCompleted}
-                          onChange={(e) => setShowCompleted(e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          Show completed tasks
-                        </span>
-                      </label>
-
-                      {/* Completed Tasks Date Filter */}
-                      {showCompleted && (
-                        <div className="ml-6 space-y-2 animate-fadeIn">
-                          <label className="flex items-center gap-2">
-                            <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
-                            <span className="text-xs text-gray-600 dark:text-gray-400">
-                              Hide completed before:
-                            </span>
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <DatePicker
-                              value={completedTasksCutoffDate || undefined}
-                              onChange={(date) => setCompletedTasksCutoffDate(date ?? null)}
-                              label=""
-                              max={new Date()}
-                            />
-                            {completedTasksCutoffDate && (
-                              <button
-                                onClick={() => setCompletedTasksCutoffDate(null)}
-                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                                title="Show all completed tasks"
-                              >
-                                Show all
-                              </button>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {completedTasksCutoffDate
-                              ? `Showing completed tasks from ${new Date(completedTasksCutoffDate).toLocaleDateString()} onwards`
-                              : 'Showing all completed tasks'}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Completed Tasks Date Range Filter */}
-                      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={showCompletedOnly}
-                            onChange={(e) => {
-                              const enabled = e.target.checked;
-                              setShowCompletedOnly(enabled);
-                              // Initialize with default range when enabling
-                              if (enabled && !completedDateRange) {
-                                const range = getDateRangeForPreset(dateRangePreset);
-                                setCompletedDateRange(range);
-                              }
-                            }}
-                            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 cursor-pointer"
-                          />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Show only completed tasks in date range
-                          </span>
+                      {/* Include Completed Tasks Selector */}
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Include completed tasks
                         </label>
 
-                        {/* Date Range Pickers */}
-                        {showCompletedOnly && (
-                          <div className="ml-6 mt-3 space-y-3 animate-fadeIn">
-                            {/* Preset Selector */}
-                            <div>
-                              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                Period
-                              </label>
-                              <select
-                                value={dateRangePreset}
-                                onChange={(e) => handlePresetChange(e.target.value)}
-                                className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors cursor-pointer"
-                              >
-                                <option value="last7days">Last 7 days</option>
-                                <option value="last30days">Last 30 days</option>
-                                <option value="last90days">Last 90 days</option>
-                                <option value="yeartodate">Year to date</option>
-                                <option value="alltime">All time</option>
-                                <option value="custom">Custom</option>
-                              </select>
-                            </div>
+                        {/* Days Selector Grid */}
+                        <div className="grid grid-cols-6 gap-2">
+                          {/* 0 days - hide all completed */}
+                          <button
+                            onClick={() => setCompletedLookbackDays(0)}
+                            className={`
+                              px-2 py-1.5 text-sm rounded transition-colors
+                              ${
+                                completedLookbackDays === 0
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }
+                            `}
+                          >
+                            0d
+                          </button>
 
-                            {/* Date Pickers (shown for custom or to display current range) */}
-                            <div className="grid grid-cols-2 gap-2">
-                              {/* Start Date */}
-                              <div>
-                                <label className="flex items-center gap-1 mb-1">
-                                  <Calendar size={12} className="text-gray-400 dark:text-gray-500" />
-                                  <span className="text-xs text-gray-600 dark:text-gray-400">
-                                    Start date
-                                  </span>
-                                </label>
-                                <DatePicker
-                                  value={completedDateRange?.start}
-                                  onChange={(date) => {
-                                    if (date && completedDateRange) {
-                                      setDateRangePreset('custom');
-                                      setCompletedDateRange({ ...completedDateRange, start: date });
-                                    }
-                                  }}
-                                  label=""
-                                  max={completedDateRange?.end || new Date()}
-                                  readOnly={dateRangePreset !== 'custom'}
-                                />
-                              </div>
+                          {/* 1 day */}
+                          <button
+                            onClick={() => setCompletedLookbackDays(1)}
+                            className={`
+                              px-2 py-1.5 text-sm rounded transition-colors
+                              ${
+                                completedLookbackDays === 1
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }
+                            `}
+                          >
+                            1d
+                          </button>
 
-                              {/* End Date */}
-                              <div>
-                                <label className="flex items-center gap-1 mb-1">
-                                  <Calendar size={12} className="text-gray-400 dark:text-gray-500" />
-                                  <span className="text-xs text-gray-600 dark:text-gray-400">
-                                    End date
-                                  </span>
-                                </label>
-                                <DatePicker
-                                  value={completedDateRange?.end}
-                                  onChange={(date) => {
-                                    if (date && completedDateRange) {
-                                      setDateRangePreset('custom');
-                                      setCompletedDateRange({ ...completedDateRange, end: date });
-                                    }
-                                  }}
-                                  label=""
-                                  max={new Date()}
-                                  readOnly={dateRangePreset !== 'custom'}
-                                />
-                              </div>
-                            </div>
+                          {/* 2 days */}
+                          <button
+                            onClick={() => setCompletedLookbackDays(2)}
+                            className={`
+                              px-2 py-1.5 text-sm rounded transition-colors
+                              ${
+                                completedLookbackDays === 2
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }
+                            `}
+                          >
+                            2d
+                          </button>
 
-                            {/* Helper Text */}
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {completedDateRange
-                                ? `Showing only completed tasks from ${new Date(completedDateRange.start).toLocaleDateString()} to ${new Date(completedDateRange.end).toLocaleDateString()}`
-                                : 'Select a date range to filter completed tasks'}
-                            </p>
+                          {/* 1 week (7 days) */}
+                          <button
+                            onClick={() => setCompletedLookbackDays(7)}
+                            className={`
+                              px-2 py-1.5 text-sm rounded transition-colors
+                              ${
+                                completedLookbackDays === 7
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }
+                            `}
+                          >
+                            1w
+                          </button>
 
-                            {/* Clear Range Button */}
-                            <button
-                              onClick={() => {
-                                setShowCompletedOnly(false);
-                                setCompletedDateRange(null);
-                              }}
-                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                              Clear date range filter
-                            </button>
-                          </div>
-                        )}
+                          {/* 1 month (30 days) */}
+                          <button
+                            onClick={() => setCompletedLookbackDays(30)}
+                            className={`
+                              px-2 py-1.5 text-sm rounded transition-colors
+                              ${
+                                completedLookbackDays === 30
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }
+                            `}
+                          >
+                            1mo
+                          </button>
+
+                          {/* Forever (null) */}
+                          <button
+                            onClick={() => setCompletedLookbackDays(null)}
+                            className={`
+                              px-2 py-1.5 text-sm rounded transition-colors
+                              ${
+                                completedLookbackDays === null
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }
+                            `}
+                          >
+                            ∞
+                          </button>
+                        </div>
+
+                        {/* Reference Date Display */}
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {completedLookbackDays === 0
+                            ? 'Not showing completed tasks'
+                            : completedLookbackDays === null
+                            ? 'Showing all completed tasks'
+                            : completedTasksCutoffDate
+                            ? `Since ${completedTasksCutoffDate.toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: completedTasksCutoffDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                              })}`
+                            : 'Loading...'}
+                        </p>
                       </div>
+
                     </div>
                   </div>
                 )}

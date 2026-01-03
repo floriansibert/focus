@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { FilterState, QuadrantType } from '../types/task';
-import { QuadrantType as QuadrantTypeEnum } from '../types/task';
+import type { FilterState, QuadrantType, ViewMode } from '../types/task';
+import { QuadrantType as QuadrantTypeEnum, ViewMode as ViewModeEnum } from '../types/task';
 import { getInitialPomodoroState, calculateNextSession, type PomodoroState } from '../utils/pomodoro';
+import { calculateCompletedViewDateRange } from '../utils/date';
 
 interface UIStore extends FilterState {
   // UI State
@@ -41,19 +42,21 @@ interface UIStore extends FilterState {
   setShowCompleted: (show: boolean) => void;
   completedTasksCutoffDate: Date | null;
   setCompletedTasksCutoffDate: (date: Date | null) => void;
+  completedLookbackDays: number | null; // null = forever, number = days to look back
+  setCompletedLookbackDays: (days: number | null) => void;
   showCompletedOnly: boolean;
   completedDateRange: { start: Date; end: Date } | null;
   setShowCompletedOnly: (enabled: boolean) => void;
   setCompletedDateRange: (range: { start: Date; end: Date } | null) => void;
-  showOverdueOnly: boolean;
-  setShowOverdueOnly: (enabled: boolean) => void;
   starredFilterByQuadrant: Record<QuadrantType, boolean>;
   toggleStarredForQuadrant: (quadrant: QuadrantType) => void;
   setDateRange: (range?: { start: Date; end: Date }) => void;
   clearFilters: () => void;
 
+  // Filter mode state (mutually exclusive)
+  activeFilterMode: ViewMode | null;
+
   // Today's view state
-  showTodayView: boolean;
   todayViewDaysAhead: number; // 1, 3, 7, 14, or 30
   todayViewComponents: {
     showOverdue: boolean;
@@ -61,10 +64,16 @@ interface UIStore extends FilterState {
     showStarred: boolean;
   };
 
-  // Today's view actions
-  setShowTodayView: (enabled: boolean) => void;
+  // Completed view state
+  completedViewTimeframe: 'today' | 'yesterday' | 'thisweek' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom';
+  completedViewCustomRange: { start: Date; end: Date } | null;
+
+  // Filter mode actions
+  setActiveFilterMode: (mode: ViewMode | null) => void;
   setTodayViewDaysAhead: (days: number) => void;
   toggleTodayViewComponent: (component: 'showOverdue' | 'showDueSoon' | 'showStarred') => void;
+  setCompletedViewTimeframe: (timeframe: 'today' | 'yesterday' | 'thisweek' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom') => void;
+  setCompletedViewCustomRange: (range: { start: Date; end: Date } | null) => void;
 
   // Pomodoro state
   isPomodoroOpen: boolean;
@@ -130,9 +139,9 @@ export const useUIStore = create<UIStore>()(
       selectedPeople: [],
       showCompleted: true,
       completedTasksCutoffDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      completedLookbackDays: 7, // Default to 1 week
       showCompletedOnly: false,
       completedDateRange: null,
-      showOverdueOnly: false,
       starredFilterByQuadrant: {
         [QuadrantTypeEnum.URGENT_IMPORTANT]: false,
         [QuadrantTypeEnum.NOT_URGENT_IMPORTANT]: false,
@@ -141,14 +150,16 @@ export const useUIStore = create<UIStore>()(
       },
       dateRange: undefined,
 
-      // Today's view initial state
-      showTodayView: false,
+      // Filter mode initial state
+      activeFilterMode: null,
       todayViewDaysAhead: 7,
       todayViewComponents: {
         showOverdue: true,
         showDueSoon: true,
         showStarred: true,
       },
+      completedViewTimeframe: 'lastweek',
+      completedViewCustomRange: null,
 
       // Pomodoro initial state
       isPomodoroOpen: false,
@@ -247,11 +258,28 @@ export const useUIStore = create<UIStore>()(
 
       setCompletedTasksCutoffDate: (date) => set({ completedTasksCutoffDate: date }),
 
+      setCompletedLookbackDays: (days) => {
+        set({ completedLookbackDays: days });
+
+        // Automatically calculate and set cutoff date
+        if (days === 0) {
+          // 0 days - hide all completed tasks
+          set({ showCompleted: false, completedTasksCutoffDate: null });
+        } else if (days === null) {
+          // Forever - show all completed tasks
+          set({ showCompleted: true, completedTasksCutoffDate: null });
+        } else {
+          // Calculate cutoff date based on days
+          set({ showCompleted: true });
+          const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+          cutoffDate.setHours(0, 0, 0, 0);
+          set({ completedTasksCutoffDate: cutoffDate });
+        }
+      },
+
       setShowCompletedOnly: (enabled) => set({ showCompletedOnly: enabled }),
 
       setCompletedDateRange: (range) => set({ completedDateRange: range }),
-
-      setShowOverdueOnly: (enabled) => set({ showOverdueOnly: enabled }),
 
       toggleStarredForQuadrant: (quadrant) =>
         set((state) => ({
@@ -263,8 +291,25 @@ export const useUIStore = create<UIStore>()(
 
       setDateRange: (range) => set({ dateRange: range }),
 
-      // Today's view actions
-      setShowTodayView: (enabled) => set({ showTodayView: enabled }),
+      // Filter mode actions
+      setActiveFilterMode: (mode) => {
+        set({ activeFilterMode: mode });
+
+        // When switching to Completed mode, initialize date range if not set
+        if (mode === ViewModeEnum.COMPLETED) {
+          const state = get();
+          if (!state.completedDateRange) {
+            // Calculate initial range based on timeframe
+            const range = calculateCompletedViewDateRange(state.completedViewTimeframe, state.completedViewCustomRange);
+            set({ completedDateRange: range });
+          }
+          // Also set showCompletedOnly to true for compatibility with existing filter logic
+          set({ showCompletedOnly: true });
+        } else {
+          // Clear Completed mode filters when switching to Today or Plan
+          set({ showCompletedOnly: false, completedDateRange: null });
+        }
+      },
 
       setTodayViewDaysAhead: (days) => set({ todayViewDaysAhead: days }),
 
@@ -276,6 +321,23 @@ export const useUIStore = create<UIStore>()(
           },
         })),
 
+      setCompletedViewTimeframe: (timeframe) => {
+        set({ completedViewTimeframe: timeframe });
+
+        // Auto-update date range when timeframe changes (except for custom)
+        if (timeframe !== 'custom') {
+          const range = calculateCompletedViewDateRange(timeframe, null);
+          set({ completedDateRange: range });
+        }
+      },
+
+      setCompletedViewCustomRange: (range) => {
+        set({
+          completedViewCustomRange: range,
+          completedDateRange: range,
+        });
+      },
+
       clearFilters: () =>
         set({
           searchQuery: '',
@@ -283,11 +345,11 @@ export const useUIStore = create<UIStore>()(
           selectedPeople: [],
           showCompleted: true,
           completedTasksCutoffDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Reset to 7 days ago
+          completedLookbackDays: 7, // Reset to 1 week
           showCompletedOnly: false,
           completedDateRange: null,
-          showOverdueOnly: false,
           dateRange: undefined,
-          showTodayView: false,
+          activeFilterMode: null,
         }),
 
       // History retention action
@@ -396,50 +458,67 @@ export const useUIStore = create<UIStore>()(
         focusedQuadrant: state.focusedQuadrant,
         helpModalSection: state.helpModalSection,
         completedTasksCutoffDate: state.completedTasksCutoffDate,
+        completedLookbackDays: state.completedLookbackDays,
         showCompletedOnly: state.showCompletedOnly,
         completedDateRange: state.completedDateRange,
-        showOverdueOnly: state.showOverdueOnly,
         historyRetentionDays: state.historyRetentionDays,
         exportReminderEnabled: state.exportReminderEnabled,
         exportReminderFrequencyDays: state.exportReminderFrequencyDays,
         lastExportReminderDismissed: state.lastExportReminderDismissed,
         exportReminderSnoozedUntil: state.exportReminderSnoozedUntil,
-        showTodayView: state.showTodayView,
+        activeFilterMode: state.activeFilterMode,
         todayViewDaysAhead: state.todayViewDaysAhead,
         todayViewComponents: state.todayViewComponents,
+        completedViewTimeframe: state.completedViewTimeframe,
+        completedViewCustomRange: state.completedViewCustomRange,
       }),
-      merge: (persistedState: Record<string, unknown>, currentState) => ({
-        ...currentState,
-        ...persistedState,
-        collapsedTasks: new Set(persistedState?.collapsedTasks || []),
-        completedTasksCutoffDate: persistedState?.completedTasksCutoffDate
-          ? new Date(persistedState.completedTasksCutoffDate)
-          : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        showCompletedOnly: persistedState?.showCompletedOnly ?? false,
-        completedDateRange: persistedState?.completedDateRange
-          ? {
-              start: new Date(persistedState.completedDateRange.start),
-              end: new Date(persistedState.completedDateRange.end),
-            }
-          : null,
-        showOverdueOnly: persistedState?.showOverdueOnly ?? false,
-        historyRetentionDays: persistedState?.historyRetentionDays ?? 7,
-        exportReminderEnabled: persistedState?.exportReminderEnabled ?? true,
-        exportReminderFrequencyDays: persistedState?.exportReminderFrequencyDays ?? 7,
-        lastExportReminderDismissed: persistedState?.lastExportReminderDismissed
-          ? new Date(persistedState.lastExportReminderDismissed)
-          : null,
-        exportReminderSnoozedUntil: persistedState?.exportReminderSnoozedUntil
-          ? new Date(persistedState.exportReminderSnoozedUntil)
-          : null,
-        showTodayView: persistedState?.showTodayView ?? false,
-        todayViewDaysAhead: persistedState?.todayViewDaysAhead ?? 7,
-        todayViewComponents: persistedState?.todayViewComponents ?? {
-          showOverdue: true,
-          showDueSoon: true,
-          showStarred: true,
-        },
-      }),
+      merge: (persistedState: Record<string, unknown>, currentState) => {
+        // Migration: Convert old showTodayView to new activeFilterMode
+        let activeFilterMode = persistedState?.activeFilterMode ?? null;
+        if (persistedState?.showTodayView === true && !activeFilterMode) {
+          activeFilterMode = ViewModeEnum.TODAY;
+        }
+
+        return {
+          ...currentState,
+          ...persistedState,
+          collapsedTasks: new Set(persistedState?.collapsedTasks || []),
+          completedTasksCutoffDate: persistedState?.completedTasksCutoffDate
+            ? new Date(persistedState.completedTasksCutoffDate)
+            : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          completedLookbackDays: persistedState?.completedLookbackDays ?? 7,
+          showCompletedOnly: persistedState?.showCompletedOnly ?? false,
+          completedDateRange: persistedState?.completedDateRange
+            ? {
+                start: new Date(persistedState.completedDateRange.start),
+                end: new Date(persistedState.completedDateRange.end),
+              }
+            : null,
+          historyRetentionDays: persistedState?.historyRetentionDays ?? 7,
+          exportReminderEnabled: persistedState?.exportReminderEnabled ?? true,
+          exportReminderFrequencyDays: persistedState?.exportReminderFrequencyDays ?? 7,
+          lastExportReminderDismissed: persistedState?.lastExportReminderDismissed
+            ? new Date(persistedState.lastExportReminderDismissed)
+            : null,
+          exportReminderSnoozedUntil: persistedState?.exportReminderSnoozedUntil
+            ? new Date(persistedState.exportReminderSnoozedUntil)
+            : null,
+          activeFilterMode,
+          todayViewDaysAhead: persistedState?.todayViewDaysAhead ?? 7,
+          todayViewComponents: persistedState?.todayViewComponents ?? {
+            showOverdue: true,
+            showDueSoon: true,
+            showStarred: true,
+          },
+          completedViewTimeframe: persistedState?.completedViewTimeframe ?? 'lastweek',
+          completedViewCustomRange: persistedState?.completedViewCustomRange
+            ? {
+                start: new Date(persistedState.completedViewCustomRange.start),
+                end: new Date(persistedState.completedViewCustomRange.end),
+              }
+            : null,
+        };
+      },
     }
   )
 );

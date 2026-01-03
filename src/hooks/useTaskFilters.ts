@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Task, QuadrantType } from '../types/task';
-import { TaskType } from '../types/task';
+import { TaskType, ViewMode } from '../types/task';
 import { useUIStore } from '../store/uiStore';
 import { useTaskStore } from '../store/taskStore';
 
@@ -8,7 +8,7 @@ import { useTaskStore } from '../store/taskStore';
  * Hook to filter tasks based on current filter state
  */
 export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
-  const { searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, starredFilterByQuadrant, showTodayView, todayViewDaysAhead, todayViewComponents } = useUIStore();
+  const { searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, starredFilterByQuadrant, activeFilterMode, todayViewDaysAhead, todayViewComponents } = useUIStore();
   const allTags = useTaskStore((state) => state.tags);
   const allPeople = useTaskStore((state) => state.people);
   const showStarredOnly = quadrant ? starredFilterByQuadrant[quadrant] : false;
@@ -65,20 +65,8 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
         }
       }
 
-      // Overdue filter (only show overdue tasks)
-      if (showOverdueOnly) {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0); // Start of today for comparison
-
-        const isOverdue = !!(task.dueDate &&
-                            new Date(task.dueDate) < now &&
-                            !task.completed);
-
-        matches = matches && isOverdue;
-      }
-
       // Today's view filter (3-component OR logic)
-      if (showTodayView) {
+      if (activeFilterMode === ViewMode.TODAY) {
         const now = new Date();
         now.setHours(0, 0, 0, 0); // Start of today
 
@@ -89,7 +77,7 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
         let matchesTodayView = false;
 
         // Component 1: Overdue tasks
-        if (todayViewComponents.showOverdue && task.dueDate && !task.completed) {
+        if (todayViewComponents.showOverdue && task.dueDate) {
           const dueDate = new Date(task.dueDate);
           dueDate.setHours(0, 0, 0, 0);
           if (dueDate < now) {
@@ -98,7 +86,7 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
         }
 
         // Component 2: Due soon (today or within N days)
-        if (todayViewComponents.showDueSoon && task.dueDate && !task.completed) {
+        if (todayViewComponents.showDueSoon && task.dueDate) {
           const dueDate = new Date(task.dueDate);
           if (dueDate >= now && dueDate <= futureDate) {
             matchesTodayView = true;
@@ -111,6 +99,25 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
         }
 
         matches = matches && matchesTodayView;
+      }
+
+      // Completed view filter
+      if (activeFilterMode === ViewMode.COMPLETED && completedDateRange) {
+        // For completed mode, ONLY completed tasks in range match directly
+        // Subtask handling will be done in Phase 2
+        if (!task.completed || !task.completedAt) {
+          matches = false;
+        } else {
+          const completedDate = new Date(task.completedAt);
+          const startDate = new Date(completedDateRange.start);
+          const endDate = new Date(completedDateRange.end);
+
+          // Normalize dates to start/end of day for comparison
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+
+          matches = matches && (completedDate >= startDate && completedDate <= endDate);
+        }
       }
 
       // Search query filter
@@ -152,12 +159,28 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
       }
     });
 
-    // PHASE 2: Include ALL subtasks when parent matches
+    // PHASE 2: Include subtasks when parent matches
     candidateTasks.forEach((task) => {
       if (task.taskType === TaskType.SUBTASK && task.parentTaskId) {
-        // If parent is in direct matches, include this subtask
         if (directMatches.has(task.parentTaskId)) {
-          directMatches.add(task.id);
+          // In Completed mode, only include subtasks completed within the date range
+          if (activeFilterMode === ViewMode.COMPLETED && completedDateRange) {
+            if (task.completed && task.completedAt) {
+              const completedDate = new Date(task.completedAt);
+              const startDate = new Date(completedDateRange.start);
+              const endDate = new Date(completedDateRange.end);
+
+              startDate.setHours(0, 0, 0, 0);
+              endDate.setHours(23, 59, 59, 999);
+
+              if (completedDate >= startDate && completedDate <= endDate) {
+                directMatches.add(task.id);
+              }
+            }
+          } else {
+            // For other modes, include ALL subtasks when parent matches
+            directMatches.add(task.id);
+          }
         }
       }
     });
@@ -173,8 +196,9 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
     });
 
     // PHASE 4: Re-expand with ALL subtasks of newly added parents
-    // Skip this phase when date range filter is active - only show subtasks that matched the date range
-    if (!showCompletedOnly || !completedDateRange) {
+    // Skip this phase for Completed mode - we've already carefully filtered subtasks
+    // Also skip when date range filter is active
+    if (activeFilterMode !== ViewMode.COMPLETED && (!showCompletedOnly || !completedDateRange)) {
       candidateTasks.forEach((task) => {
         if (task.taskType === TaskType.SUBTASK && task.parentTaskId) {
           if (directMatches.has(task.parentTaskId)) {
@@ -189,5 +213,5 @@ export function useTaskFilters(tasks: Task[], quadrant?: QuadrantType): Task[] {
     return candidateTasks
       .filter((task) => directMatches.has(task.id))
       .filter((task) => task.taskType !== TaskType.RECURRING_PARENT);
-  }, [tasks, searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showOverdueOnly, showStarredOnly, allTags, allPeople, showTodayView, todayViewDaysAhead, todayViewComponents]);
+  }, [tasks, searchQuery, selectedTags, selectedPeople, showCompleted, completedTasksCutoffDate, showCompletedOnly, completedDateRange, showStarredOnly, allTags, allPeople, activeFilterMode, todayViewDaysAhead, todayViewComponents]);
 }

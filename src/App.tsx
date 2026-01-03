@@ -22,11 +22,11 @@ import { useUndoRedo } from './hooks/useUndoRedo';
 import { usePomodoroTimer } from './hooks/usePomodoroTimer';
 import { useHistoryCleanup } from './hooks/useHistoryCleanup';
 import { useExportReminder } from './hooks/useExportReminder';
-import { QuadrantType, TaskType } from './types/task';
+import { QuadrantType, TaskType, ViewMode } from './types/task';
 
 function App() {
   const { loadFromDB, addTask, addTag } = useTaskStore();
-  const { activeView, setActiveView, toggleCommandPalette, toggleTheme, clearFilters, focusedQuadrant, setFocusedQuadrant } =
+  const { activeView, setActiveView, toggleCommandPalette, toggleTheme, clearFilters, focusedQuadrant, setFocusedQuadrant, activeFilterMode, setActiveFilterMode } =
     useUIStore();
   const [error, setError] = useState<string | null>(null);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
@@ -175,6 +175,18 @@ function App() {
       ctrl: true,
       description: 'Toggle Pomodoro timer',
       action: () => useUIStore.getState().togglePomodoro(),
+    },
+    {
+      key: 'c',
+      ctrl: true,
+      shift: true,
+      description: 'Toggle Completed view',
+      action: () => {
+        const currentMode = useUIStore.getState().activeFilterMode;
+        useUIStore.getState().setActiveFilterMode(
+          currentMode === ViewMode.COMPLETED ? null : ViewMode.COMPLETED
+        );
+      },
     },
     {
       key: 'z',

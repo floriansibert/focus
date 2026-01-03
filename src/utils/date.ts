@@ -303,3 +303,150 @@ export function getNextMonday(): Date {
   date.setHours(0, 0, 0, 0);
   return date;
 }
+
+/**
+ * Get date range for "today"
+ */
+export function getTodayRange(): { start: Date; end: Date } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const end = new Date(today);
+  end.setHours(23, 59, 59, 999);
+
+  return { start: today, end };
+}
+
+/**
+ * Get date range for "yesterday"
+ */
+export function getYesterdayRange(): { start: Date; end: Date } {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
+
+  const end = new Date(yesterday);
+  end.setHours(23, 59, 59, 999);
+
+  return { start: yesterday, end };
+}
+
+/**
+ * Get date range for "this week" (Monday to Sunday of current week)
+ */
+export function getThisWeekRange(): { start: Date; end: Date } {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+  // Calculate days since Monday
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+  const start = new Date(now);
+  start.setDate(start.getDate() - daysSinceMonday);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6); // Sunday
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+/**
+ * Get date range for "last week" (Monday to Sunday of previous week)
+ */
+export function getLastWeekRange(): { start: Date; end: Date } {
+  const thisWeek = getThisWeekRange();
+
+  const start = new Date(thisWeek.start);
+  start.setDate(start.getDate() - 7);
+
+  const end = new Date(thisWeek.start);
+  end.setDate(end.getDate() - 1); // Sunday of last week
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+/**
+ * Get date range for "2 weeks ago"
+ */
+export function getTwoWeeksAgoRange(): { start: Date; end: Date } {
+  const lastWeek = getLastWeekRange();
+
+  const start = new Date(lastWeek.start);
+  start.setDate(start.getDate() - 7);
+
+  const end = new Date(lastWeek.end);
+  end.setDate(end.getDate() - 7);
+
+  return { start, end };
+}
+
+/**
+ * Get date range for "last month" (first to last day of previous month)
+ */
+export function getLastMonthRange(): { start: Date; end: Date } {
+  const now = new Date();
+
+  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(now.getFullYear(), now.getMonth(), 0);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+/**
+ * Calculate date range based on completed view timeframe
+ */
+export function calculateCompletedViewDateRange(
+  timeframe: 'today' | 'yesterday' | 'thisweek' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom',
+  customRange: { start: Date; end: Date } | null
+): { start: Date; end: Date } {
+  switch (timeframe) {
+    case 'today':
+      return getTodayRange();
+    case 'yesterday':
+      return getYesterdayRange();
+    case 'thisweek':
+      return getThisWeekRange();
+    case 'lastweek':
+      return getLastWeekRange();
+    case '2weeksago':
+      return getTwoWeeksAgoRange();
+    case 'lastmonth':
+      return getLastMonthRange();
+    case 'custom':
+      if (customRange) return customRange;
+      // Fallback to last week if custom range not provided
+      return getLastWeekRange();
+    default:
+      return getLastWeekRange();
+  }
+}
+
+/**
+ * Format timeframe as human-readable label
+ */
+export function formatCompletedViewTimeframe(timeframe: string): string {
+  switch (timeframe) {
+    case 'today':
+      return 'Today';
+    case 'yesterday':
+      return 'Yesterday';
+    case 'thisweek':
+      return 'This Week';
+    case 'lastweek':
+      return 'Last Week';
+    case '2weeksago':
+      return '2 Weeks Ago';
+    case 'lastmonth':
+      return 'Last Month';
+    case 'custom':
+      return 'Custom';
+    default:
+      return 'Unknown';
+  }
+}

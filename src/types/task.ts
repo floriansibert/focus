@@ -28,6 +28,14 @@ const TaskTypeValues = {
 export const TaskType = TaskTypeValues;
 export type TaskType = (typeof TaskTypeValues)[keyof typeof TaskTypeValues];
 
+const ViewModeValues = {
+  TODAY: 'today',
+  COMPLETED: 'completed'
+} as const;
+
+export const ViewMode = ViewModeValues;
+export type ViewMode = (typeof ViewModeValues)[keyof typeof ViewModeValues];
+
 export interface Tag {
   id: string;
   name: string;
@@ -87,7 +95,6 @@ export interface FilterState {
   selectedTags: string[];
   selectedPeople: string[];
   showCompleted: boolean;
-  showOverdueOnly: boolean;
   dateRange?: { start: Date; end: Date };
 }
 
