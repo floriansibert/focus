@@ -7,6 +7,8 @@ interface RecurringTaskConfigProps {
   recurrence: RecurrenceConfig | undefined;
   onRecurringChange: (isRecurring: boolean) => void;
   onRecurrenceChange: (recurrence: RecurrenceConfig) => void;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 type MonthlyMode = 'simple' | 'date' | 'weekday';
@@ -237,6 +239,8 @@ export function RecurringTaskConfig({
   recurrence,
   onRecurringChange,
   onRecurrenceChange,
+  disabled = false,
+  disabledReason,
 }: RecurringTaskConfigProps) {
   const defaultRecurrence: RecurrenceConfig = {
     pattern: RecurrencePattern.DAILY,
@@ -295,21 +299,30 @@ export function RecurringTaskConfig({
   return (
     <div className="space-y-3">
       {/* Enable Recurring Checkbox */}
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={isRecurring}
-          onChange={(e) => onRecurringChange(e.target.checked)}
-          className="
-            w-4 h-4 rounded border-gray-300 dark:border-gray-600
-            text-blue-600 focus:ring-2 focus:ring-blue-500
-            dark:bg-gray-700 cursor-pointer
-          "
-        />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Make this a recurring task
-        </span>
-      </label>
+      <div>
+        <label className={`flex items-center gap-2 ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+          <input
+            type="checkbox"
+            checked={isRecurring}
+            onChange={(e) => onRecurringChange(e.target.checked)}
+            disabled={disabled}
+            className={`
+              w-4 h-4 rounded border-gray-300 dark:border-gray-600
+              text-blue-600 focus:ring-2 focus:ring-blue-500
+              dark:bg-gray-700
+              ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+            `}
+          />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Make this a recurring task
+          </span>
+        </label>
+        {disabled && disabledReason && (
+          <p className="mt-1 ml-6 text-xs text-amber-600 dark:text-amber-500">
+            {disabledReason}
+          </p>
+        )}
+      </div>
 
       {/* Recurrence Configuration (shown when enabled) */}
       {isRecurring && (

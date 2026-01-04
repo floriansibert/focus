@@ -682,6 +682,8 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
           recurrence={recurrence}
           onRecurringChange={setIsRecurring}
           onRecurrenceChange={setRecurrence}
+          disabled={task?.taskType === TaskType.RECURRING_INSTANCE}
+          disabledReason="This is a recurring instance. To modify the recurrence pattern, edit the template instead."
         />
 
         <p className="text-xs text-gray-500 dark:text-gray-400">

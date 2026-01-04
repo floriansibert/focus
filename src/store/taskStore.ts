@@ -129,6 +129,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         }
       }
 
+      // Prevent recurring instances from being made recurring
+      // A task cannot be both a child (with parentTaskId) and a recurring parent
+      if (updatedTaskData.parentTaskId && updatedTaskData.isRecurring) {
+        console.warn(`Cannot set isRecurring=true on task ${id} because it has a parentTaskId. Forcing isRecurring=false.`);
+        updatedTaskData.isRecurring = false;
+        updatedTaskData.recurrence = undefined;
+      }
+
       set((state) => ({
         tasks: state.tasks.map((t) =>
           t.id === id ? updatedTaskData : t
