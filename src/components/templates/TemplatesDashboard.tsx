@@ -30,6 +30,7 @@ export function TemplatesDashboard() {
     if (focusedTaskId) {
       const template = templates.find((t) => t.id === focusedTaskId);
       if (template) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Legitimate external sync: responding to global UI state change
         setViewingInstancesFor(template);
         setFocusedTask(null); // Clear after handling
       }

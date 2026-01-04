@@ -11,6 +11,22 @@ interface QuadrantDistribution {
   count: number;
   percentage: number;
   color: string;
+  [key: string]: string | number; // Index signature for Recharts compatibility
+}
+
+interface LegendPayloadItem {
+  value: string;
+  type?: string;
+  id?: string;
+  color: string;
+  payload: QuadrantDistribution;
+}
+
+interface TooltipPayloadItem {
+  name?: string;
+  value: number;
+  payload: QuadrantDistribution;
+  color?: string;
 }
 
 // Icon mapping for color-blind support
@@ -46,14 +62,14 @@ export function QuadrantDistribution() {
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, payload }: {
     cx: number;
     cy: number;
-    midAngle: number;
+    midAngle?: number;
     innerRadius: number;
     outerRadius: number;
     percent: number;
     payload: QuadrantDistribution;
   }) => {
     // Hide labels for slices < 5%
-    if (percent < 0.05) return null;
+    if (percent < 0.05 || !midAngle) return null;
 
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -75,11 +91,11 @@ export function QuadrantDistribution() {
   };
 
   // Custom legend with counts
-  const CustomLegend = ({ payload }: { payload?: Array<any> }) => {
+  const CustomLegend = ({ payload }: { payload?: readonly LegendPayloadItem[] }) => {
     if (!payload) return null;
     return (
       <div className="flex flex-wrap justify-center gap-4 mt-4">
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry, index: number) => (
           <div
             key={index}
             className="flex items-center gap-2"
@@ -87,11 +103,11 @@ export function QuadrantDistribution() {
           >
             <div
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: entry.color as string }}
+              style={{ backgroundColor: entry.color }}
               aria-hidden="true"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">
-              {entry.payload?.label} ({entry.payload?.count})
+              {entry.payload.label} ({entry.payload.count})
             </span>
           </div>
         ))}
@@ -100,16 +116,16 @@ export function QuadrantDistribution() {
   };
 
   // Enhanced tooltip
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<any> }) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: readonly TooltipPayloadItem[] }) => {
     if (!active || !payload || !payload.length) return null;
 
-    const data = payload[0].payload as QuadrantDistribution;
+    const data = payload[0].payload;
     const Icon = QUADRANT_ICONS[data.quadrant as keyof typeof QUADRANT_ICONS];
 
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-lg">
         <div className="flex items-center gap-2 mb-2">
-          <Icon size={18} style={{ color: data.color as string }} />
+          <Icon size={18} style={{ color: data.color }} />
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {data.label}
           </p>
@@ -144,11 +160,11 @@ export function QuadrantDistribution() {
           >
             <PieChart>
               <Pie
-                data={distribution as any}
+                data={distribution as never}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={renderCustomLabel as any}
+                label={renderCustomLabel as never}
                 outerRadius="80%"
                 fill="#8884d8"
                 dataKey="count"
@@ -158,8 +174,8 @@ export function QuadrantDistribution() {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip content={CustomTooltip as any} />
-              <Legend content={CustomLegend as any} />
+              <Tooltip content={CustomTooltip as never} />
+              <Legend content={CustomLegend as never} />
             </PieChart>
           </ResponsiveContainer>
           </div>

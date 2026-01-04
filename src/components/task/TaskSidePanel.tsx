@@ -171,7 +171,6 @@ export function TaskSidePanel({
     }
     // Auto-expand instances if task is a template
     if (isOpen && task && task.taskType === TaskType.RECURRING_PARENT) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsInstancesExpanded(true);
     }
   }, [isOpen, task]);

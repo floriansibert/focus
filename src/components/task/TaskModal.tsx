@@ -115,7 +115,6 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
     if (isOpen) {
       if (task) {
         // Edit mode
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Form initialization from task data
         setTitle(task.title);
         setDescription(task.description || '');
         setQuadrant(task.quadrant);
@@ -153,7 +152,6 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
   useEffect(() => {
     if (isOpen && task) {
       const hasSubtasks = tasks.some((t) => t.parentTaskId === task.id);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Auto-expand based on data
       setIsSubtasksExpanded(hasSubtasks);
     }
   }, [isOpen, task, tasks]);
@@ -171,7 +169,6 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
     if (!task) {
       // Add mode: always consider as having changes if any field is filled
       const hasContent = title.trim() !== '' || description.trim() !== '';
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Computing derived state from form fields
       setHasChanges(hasContent);
       return;
     }

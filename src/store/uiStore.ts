@@ -482,17 +482,54 @@ export const useUIStore = create<UIStore>()(
         completedViewCustomRange: state.completedViewCustomRange,
       }),
       merge: (persistedState: unknown, currentState) => {
-        const state = persistedState as Record<string, any>;
+        // Define proper type for persisted state from localStorage
+        interface PersistedUIState {
+          activeFilterMode?: string | null;
+          showTodayView?: boolean;
+          collapsedTasks?: string[];
+          completedTasksCutoffDate?: string;
+          completedDateRange?: {
+            start: string;
+            end: string;
+          } | null;
+          completedLookbackDays?: number | null;
+          showCompletedOnly?: boolean;
+          historyRetentionDays?: number | null;
+          exportReminderEnabled?: boolean;
+          exportReminderFrequencyDays?: number;
+          lastExportReminderDismissed?: string | null;
+          exportReminderSnoozedUntil?: string | null;
+          todayViewDaysAhead?: number;
+          todayViewComponents?: {
+            overdue?: boolean;
+            dueToday?: boolean;
+            upcoming?: boolean;
+            noDueDate?: boolean;
+          };
+          completedViewTimeframe?: 'today' | 'week' | 'month' | 'custom';
+          completedViewCustomRange?: {
+            start: string;
+            end: string;
+          } | null;
+          [key: string]: unknown; // Allow other dynamic properties during migration
+        }
+
+        const state = persistedState as PersistedUIState;
+
+        // Exclude properties we're explicitly setting to avoid duplicates
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { activeFilterMode: _activeFilterMode, todayViewComponents: _todayViewComponents, ...restState } = state || {};
 
         // Migration: Convert old showTodayView to new activeFilterMode
-        let activeFilterMode = state?.activeFilterMode ?? null;
+        let activeFilterMode: ViewMode | null = (state?.activeFilterMode as ViewMode) ?? null;
         if (state?.showTodayView === true && !activeFilterMode) {
           activeFilterMode = ViewModeEnum.TODAY;
         }
 
         return {
           ...currentState,
-          ...(state || {}),
+          ...restState,
+          activeFilterMode,
           collapsedTasks: new Set(state?.collapsedTasks || []),
           completedTasksCutoffDate: state?.completedTasksCutoffDate
             ? new Date(state.completedTasksCutoffDate)
@@ -514,14 +551,13 @@ export const useUIStore = create<UIStore>()(
           exportReminderSnoozedUntil: state?.exportReminderSnoozedUntil
             ? new Date(state.exportReminderSnoozedUntil)
             : null,
-          activeFilterMode,
           todayViewDaysAhead: state?.todayViewDaysAhead ?? 7,
-          todayViewComponents: state?.todayViewComponents ?? {
+          todayViewComponents: (state?.todayViewComponents as { showOverdue: boolean; showDueSoon: boolean; showStarred: boolean }) ?? {
             showOverdue: true,
             showDueSoon: true,
             showStarred: true,
           },
-          completedViewTimeframe: state?.completedViewTimeframe ?? 'lastweek',
+          completedViewTimeframe: (state?.completedViewTimeframe as 'today' | 'yesterday' | 'thisweek' | 'thismonth' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom') ?? 'lastweek',
           completedViewCustomRange: state?.completedViewCustomRange
             ? {
                 start: new Date(state.completedViewCustomRange.start),

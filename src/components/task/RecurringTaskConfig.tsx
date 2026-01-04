@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { addMonths } from 'date-fns';
 import { ChevronDown } from 'lucide-react';
 import { RecurrencePattern, type RecurrenceConfig } from '../../types/task';
@@ -188,18 +188,11 @@ function EndConditionSelector({ recurrence, onChange }: EndConditionSelectorProp
 
   const [mode, setMode] = useState<EndConditionMode>(getCurrentMode);
 
-  // Collapse state - start expanded if there's an active end condition
-  const [isExpanded, setIsExpanded] = useState(() => {
-    const currentMode = getCurrentMode();
-    return currentMode === 'date' || currentMode === 'count';
-  });
-
-  // Auto-expand when user sets an end condition
-  useEffect(() => {
-    if (mode !== 'never') {
-      setIsExpanded(true);
-    }
-  }, [mode]);
+  // Track whether section is manually collapsed by user
+  const [isManuallyCollapsed, setIsManuallyCollapsed] = useState(false);
+  // Auto-expand when there's an end condition set, unless manually collapsed
+  const hasEndCondition = mode !== 'never';
+  const isExpanded = !isManuallyCollapsed && hasEndCondition;
 
   const handleModeChange = (newMode: EndConditionMode) => {
     setMode(newMode);
@@ -259,7 +252,7 @@ function EndConditionSelector({ recurrence, onChange }: EndConditionSelectorProp
       {/* Collapsible header */}
       <button
         type="button"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => setIsManuallyCollapsed(!isExpanded)}
         className="w-full flex items-center justify-between py-2 px-1 -mx-1 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
       >
         <div className="flex items-center gap-2">
@@ -287,7 +280,7 @@ function EndConditionSelector({ recurrence, onChange }: EndConditionSelectorProp
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="radio"
-            checked={mode === 'never'}
+            checked={(mode as EndConditionMode) === 'never'}
             onChange={() => handleModeChange('never')}
             className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
           />
@@ -421,49 +414,21 @@ export function RecurringTaskConfig({
 
   const currentRecurrence = recurrence || defaultRecurrence;
 
-  const [monthlyMode, setMonthlyMode] = useState<MonthlyMode>(() => {
+  // Derive monthlyMode from currentRecurrence instead of using state + effect
+  const monthlyMode = useMemo<MonthlyMode>(() => {
     if (currentRecurrence.dayOfMonth !== undefined) return 'date';
     if (currentRecurrence.weekOfMonth !== undefined) return 'weekday';
     return 'simple';
-  });
+  }, [currentRecurrence.dayOfMonth, currentRecurrence.weekOfMonth]);
 
-  // Sync monthlyMode when recurrence config changes (e.g., when reopening a task)
-  useEffect(() => {
-    if (currentRecurrence.pattern === RecurrencePattern.MONTHLY) {
-      if (currentRecurrence.dayOfMonth !== undefined) {
-        setMonthlyMode('date');
-      } else if (currentRecurrence.weekOfMonth !== undefined) {
-        setMonthlyMode('weekday');
-      } else {
-        setMonthlyMode('simple');
-      }
-    }
-  }, [currentRecurrence.pattern, currentRecurrence.dayOfMonth, currentRecurrence.weekOfMonth]);
-
-  const [yearlyMode, setYearlyMode] = useState<'simple' | 'date' | 'weekday'>(() => {
+  // Derive yearlyMode from currentRecurrence instead of using state + effect
+  const yearlyMode = useMemo<'simple' | 'date' | 'weekday'>(() => {
     if (currentRecurrence.monthOfYear !== undefined) {
       if (currentRecurrence.dayOfMonth !== undefined && currentRecurrence.weekOfMonth === undefined) return 'date';
       if (currentRecurrence.weekOfMonth !== undefined) return 'weekday';
     }
     return 'simple';
-  });
-
-  // Sync yearlyMode when recurrence config changes (e.g., when reopening a task)
-  useEffect(() => {
-    if (currentRecurrence.pattern === RecurrencePattern.YEARLY) {
-      if (currentRecurrence.monthOfYear !== undefined) {
-        if (currentRecurrence.dayOfMonth !== undefined && currentRecurrence.weekOfMonth === undefined) {
-          setYearlyMode('date');
-        } else if (currentRecurrence.weekOfMonth !== undefined) {
-          setYearlyMode('weekday');
-        } else {
-          setYearlyMode('simple');
-        }
-      } else {
-        setYearlyMode('simple');
-      }
-    }
-  }, [currentRecurrence.pattern, currentRecurrence.monthOfYear, currentRecurrence.dayOfMonth, currentRecurrence.weekOfMonth]);
+  }, [currentRecurrence.monthOfYear, currentRecurrence.dayOfMonth, currentRecurrence.weekOfMonth]);
 
   const getPatternLabel = (pattern: RecurrencePattern): string => {
     switch (pattern) {
@@ -507,17 +472,7 @@ export function RecurringTaskConfig({
 
     setActivePreset(presetId);
     onRecurrenceChange({ ...currentRecurrence, ...preset.config });
-
-    // Update monthlyMode state if preset is monthly
-    if (preset.config.pattern === RecurrencePattern.MONTHLY) {
-      if (preset.config.dayOfMonth !== undefined) {
-        setMonthlyMode('date');
-      } else if (preset.config.weekOfMonth !== undefined) {
-        setMonthlyMode('weekday');
-      } else {
-        setMonthlyMode('simple');
-      }
-    }
+    // monthlyMode will be automatically derived from the new recurrence config
   };
 
   const handleCustomChange = (newRecurrence: RecurrenceConfig) => {
@@ -541,8 +496,7 @@ export function RecurringTaskConfig({
   };
 
   const handleMonthlyModeChange = (mode: MonthlyMode) => {
-    setMonthlyMode(mode);
-
+    // Update recurrence config based on mode selection
     if (mode === 'simple') {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing fields
       const { dayOfMonth: _dayOfMonth, weekOfMonth: _weekOfMonth, dayOfWeekInMonth: _dayOfWeekInMonth, ...rest } = currentRecurrence;
@@ -566,7 +520,7 @@ export function RecurringTaskConfig({
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing fields
     const { weekOfMonth: _weekOfMonth, dayOfWeekInMonth: _dayOfWeekInMonth, ...rest } = currentRecurrence;
     handleCustomChange({ ...rest, dayOfMonth: day });
-    setMonthlyMode('date');
+    // monthlyMode will be automatically derived to 'date'
   };
 
   const handleMonthlyWeekChange = (week: number) => {
@@ -577,7 +531,7 @@ export function RecurringTaskConfig({
       weekOfMonth: week,
       dayOfWeekInMonth: currentRecurrence.dayOfWeekInMonth ?? 1
     });
-    setMonthlyMode('weekday');
+    // monthlyMode will be automatically derived to 'weekday'
   };
 
   const handleMonthlyDayChange = (day: number) => {
@@ -588,11 +542,11 @@ export function RecurringTaskConfig({
       weekOfMonth: currentRecurrence.weekOfMonth ?? 1,
       dayOfWeekInMonth: day
     });
-    setMonthlyMode('weekday');
+    // monthlyMode will be automatically derived to 'weekday'
   };
 
   const handleYearlyModeChange = (mode: 'simple' | 'date' | 'weekday') => {
-    setYearlyMode(mode);
+    // Update recurrence config based on mode selection
     if (mode === 'simple') {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing fields
       const { monthOfYear: _m, dayOfMonth: _d, weekOfMonth: _w, dayOfWeekInMonth: _dw, ...rest } = currentRecurrence;
@@ -616,21 +570,21 @@ export function RecurringTaskConfig({
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing fields
     const { weekOfMonth: _w, dayOfWeekInMonth: _dw, ...rest } = currentRecurrence;
     handleCustomChange({ ...rest, dayOfMonth: day });
-    setYearlyMode('date');
+    // yearlyMode will be automatically derived to 'date'
   };
 
   const handleYearlyWeekChange = (week: number) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing field
     const { dayOfMonth: _d, ...rest } = currentRecurrence;
     handleCustomChange({ ...rest, weekOfMonth: week, dayOfWeekInMonth: currentRecurrence.dayOfWeekInMonth ?? 1 });
-    setYearlyMode('weekday');
+    // yearlyMode will be automatically derived to 'weekday'
   };
 
   const handleYearlyDayChange = (day: number) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing field
     const { dayOfMonth: _d, ...rest } = currentRecurrence;
     handleCustomChange({ ...rest, weekOfMonth: currentRecurrence.weekOfMonth ?? 1, dayOfWeekInMonth: day });
-    setYearlyMode('weekday');
+    // yearlyMode will be automatically derived to 'weekday'
   };
 
   return (
