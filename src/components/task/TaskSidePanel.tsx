@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { X, ArrowRight, ChevronDown, Check, Plus, CornerDownRight } from 'lucide-react';
+import { X, ChevronDown, Check, Plus, CornerDownRight } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { DatePicker } from '../ui/DatePicker';
 import { Button } from '../ui/Button';
@@ -502,21 +502,22 @@ export function TaskSidePanel({
         )}
 
         {/* Recurring Instance Info */}
-        {task && latestTask && latestTask.taskType === TaskType.RECURRING_INSTANCE && latestTask.parentTaskId && (
+        {task && latestTask && latestTask.taskType === TaskType.RECURRING_INSTANCE && latestTask.parentTaskId && parentTask && (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-900 dark:text-blue-100">
-              This task was created from a recurring template{parentTask ? `: ${parentTask.title}` : ''}
+              This task was created from a recurring template: {' '}
+              <button
+                onClick={() => {
+                  const { setActiveView, setFocusedTask } = useUIStore.getState();
+                  setActiveView('templates');
+                  setFocusedTask(parentTask.id);
+                  onClose();
+                }}
+                className="font-bold hover:underline cursor-pointer"
+              >
+                {parentTask.title}
+              </button>
             </p>
-            <button
-              onClick={() => {
-                const { setActiveView } = useUIStore.getState();
-                setActiveView('templates');
-                onClose();
-              }}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 flex items-center gap-1"
-            >
-              Go to template <ArrowRight size={12} />
-            </button>
           </div>
         )}
 

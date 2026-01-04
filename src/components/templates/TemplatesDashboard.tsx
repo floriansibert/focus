@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Repeat, Plus } from 'lucide-react';
 import { useTaskStore } from '../../store/taskStore';
+import { useUIStore } from '../../store/uiStore';
 import { TaskType, QuadrantType } from '../../types/task';
 import { TemplateCard } from './TemplateCard';
 import { TaskModal } from '../task/TaskModal';
@@ -11,6 +12,8 @@ import toast from 'react-hot-toast';
 
 export function TemplatesDashboard() {
   const { tasks, deleteTask, toggleTemplatePause } = useTaskStore();
+  const focusedTaskId = useUIStore((state) => state.focusedTaskId);
+  const setFocusedTask = useUIStore((state) => state.setFocusedTask);
   const [selectedTemplate, setSelectedTemplate] = useState<Task | null>(null);
   const [viewingInstancesFor, setViewingInstancesFor] = useState<Task | null>(null);
 
@@ -19,6 +22,17 @@ export function TemplatesDashboard() {
     () => tasks.filter((task) => task.taskType === TaskType.RECURRING_PARENT),
     [tasks]
   );
+
+  // Handle focused task from external navigation (e.g., clicking template link from instance)
+  useEffect(() => {
+    if (focusedTaskId) {
+      const template = templates.find((t) => t.id === focusedTaskId);
+      if (template) {
+        setViewingInstancesFor(template);
+        setFocusedTask(null); // Clear after handling
+      }
+    }
+  }, [focusedTaskId, templates, setFocusedTask]);
 
   const handleEdit = (template: Task) => {
     setSelectedTemplate(template);

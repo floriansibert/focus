@@ -77,26 +77,20 @@ export function TemplateCard({ template, onEdit, onViewInstances, onDelete, onTo
       {/* Tags and People */}
       {(templateTags.length > 0 || templatePeople.length > 0) && (
         <div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
-          {/* Tags */}
-          {templateTags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {templateTags.map((tag) => (
-                <Badge key={tag.id} color={tag.color} size="sm">
-                  {tag.name}
-                </Badge>
-              ))}
-            </div>
-          )}
-          {/* People */}
-          {templatePeople.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {templatePeople.map((person) => (
-                <PersonBadge key={person.id} color={person.color} size="sm">
-                  {person.name}
-                </PersonBadge>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-1">
+            {/* Tags */}
+            {templateTags.map((tag) => (
+              <Badge key={tag.id} color={tag.color} size="sm">
+                {tag.name}
+              </Badge>
+            ))}
+            {/* People */}
+            {templatePeople.map((person) => (
+              <PersonBadge key={person.id} color={person.color} size="sm">
+                {person.name}
+              </PersonBadge>
+            ))}
+          </div>
         </div>
       )}
 
