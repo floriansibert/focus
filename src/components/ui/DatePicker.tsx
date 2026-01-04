@@ -6,6 +6,7 @@ export interface DatePickerProps {
   value?: Date;
   onChange: (date: Date | undefined) => void;
   error?: string;
+  min?: Date;
   max?: Date;
   disabled?: boolean;
   readOnly?: boolean;
@@ -14,7 +15,7 @@ export interface DatePickerProps {
 }
 
 export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
-  ({ label, value, onChange, error, max, disabled, readOnly, compact = false, allowClear = true }, ref) => {
+  ({ label, value, onChange, error, min, max, disabled, readOnly, compact = false, allowClear = true }, ref) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.value) {
         onChange(new Date(e.target.value));
@@ -51,6 +52,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
             type="date"
             value={formatDateForInput(value)}
             onChange={handleChange}
+            min={min ? formatDateForInput(min) : undefined}
             max={max ? formatDateForInput(max) : undefined}
             disabled={disabled}
             readOnly={readOnly}

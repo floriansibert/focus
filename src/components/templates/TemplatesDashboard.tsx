@@ -175,6 +175,7 @@ export function TemplatesDashboard() {
           task={selectedTemplate.id ? selectedTemplate : undefined}
           onClose={handleCloseModal}
           defaultQuadrant={selectedTemplate.quadrant}
+          defaultIsRecurring={true}
         />
       )}
 

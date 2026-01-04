@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { RecurringTaskConfig } from './RecurringTaskConfig';
 import { SubtaskList } from './SubtaskList';
+import { InstanceList } from './InstanceList';
 import { SubtaskProgressPie } from '../ui/SubtaskProgressPie';
 import { ParentSelectorModal } from './ParentSelectorModal';
 import { QuadrantIcon } from './QuadrantIcon';
@@ -55,6 +56,7 @@ export function TaskSidePanel({
   const [completedAt, setCompletedAt] = useState<Date | undefined>();
   const [errors, setErrors] = useState<{ title?: string }>({});
   const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
+  const [isInstancesExpanded, setIsInstancesExpanded] = useState(false);
   const [pendingSubtasks, setPendingSubtasks] = useState<Array<{ title: string }>>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [isParentSelectorOpen, setIsParentSelectorOpen] = useState(false);
@@ -169,6 +171,11 @@ export function TaskSidePanel({
     if (isOpen && task && canHaveSubtasks(task)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsSubtasksExpanded(true);
+    }
+    // Auto-expand instances if task is a template
+    if (isOpen && task && task.taskType === TaskType.RECURRING_PARENT) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsInstancesExpanded(true);
     }
   }, [isOpen, task]);
 
@@ -303,9 +310,15 @@ export function TaskSidePanel({
       newErrors.title = 'Title is required';
     }
 
+    // Validate recurring task configuration
+    if (isRecurring && !recurrence) {
+      toast.error('Please configure the recurrence pattern');
+      return false;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [title]);
+  }, [title, isRecurring, recurrence]);
 
   const handleSubmit = useCallback(() => {
     if (!validate()) return;
@@ -521,6 +534,15 @@ export function TaskSidePanel({
           </div>
         )}
 
+        {/* Template Info Banner */}
+        {task && latestTask && latestTask.taskType === TaskType.RECURRING_PARENT && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-900 dark:text-blue-100">
+              <span className="font-semibold">Template:</span> This is a recurring template. Instances will be automatically generated based on the recurrence pattern.
+            </p>
+          </div>
+        )}
+
         <Input
           ref={titleInputRef}
           label="Title"
@@ -652,14 +674,14 @@ export function TaskSidePanel({
         {/* Subtask Management */}
         {(() => {
           // Only show subtasks section if:
-          // - In edit mode and task can have subtasks OR is a template (which has instances)
+          // - In edit mode and task can have subtasks OR is a template (which can have subtasks to copy to instances)
           // - In add mode: only if we're not creating a subtask (no nested subtasks)
           const showSubtasks = task ? (canHaveSubtasks(task) || task.taskType === TaskType.RECURRING_PARENT) : !defaultParentTaskId;
 
           if (!showSubtasks) return null;
 
           const subtaskCount = task
-            ? tasks.filter((t) => t.parentTaskId === task.id).length
+            ? tasks.filter((t) => t.parentTaskId === task.id && t.taskType === TaskType.SUBTASK).length
             : pendingSubtasks.length;
 
           return (
@@ -672,7 +694,7 @@ export function TaskSidePanel({
               >
                 <div className="flex items-center gap-2 flex-1">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {isTemplate ? 'Instances' : 'Subtasks'}
+                    Subtasks
                   </span>
                   {subtaskCount > 0 && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
@@ -756,13 +778,78 @@ export function TaskSidePanel({
           );
         })()}
 
+        {/* Instance Management - Only for Templates */}
+        {task && isTemplate && (
+          <div>
+            {/* Collapsible Header */}
+            <button
+              type="button"
+              onClick={() => setIsInstancesExpanded(!isInstancesExpanded)}
+              className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Instances
+                </span>
+                {(() => {
+                  const { getInstances } = useTaskStore.getState();
+                  const instanceCount = getInstances(task.id).length;
+                  return instanceCount > 0 ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                      {instanceCount}
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+              <ChevronDown
+                size={16}
+                className={`text-gray-500 dark:text-gray-400 transition-transform ${
+                  isInstancesExpanded ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {/* Expandable Content */}
+            {isInstancesExpanded && (
+              <div className="mt-2 animate-fadeIn">
+                <InstanceList
+                  templateId={task.id}
+                  onInstanceClick={handleSubtaskClick}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         <RecurringTaskConfig
           isRecurring={isRecurring}
           recurrence={recurrence}
           onRecurringChange={setIsRecurring}
           onRecurrenceChange={setRecurrence}
-          disabled={task?.taskType === TaskType.RECURRING_INSTANCE}
-          disabledReason="This is a recurring instance. To modify the recurrence pattern, edit the template instead."
+          disabled={(() => {
+            if (task?.taskType === TaskType.RECURRING_INSTANCE) return true;
+            if (task?.taskType === TaskType.SUBTASK && task.parentTaskId) {
+              const parentTask = tasks.find((t) => t.id === task.parentTaskId);
+              return parentTask?.taskType === TaskType.RECURRING_INSTANCE || parentTask?.taskType === TaskType.RECURRING_PARENT;
+            }
+            return false;
+          })()}
+          disabledReason={(() => {
+            if (task?.taskType === TaskType.RECURRING_INSTANCE) {
+              return "This is a recurring instance. To modify the recurrence pattern, edit the template instead.";
+            }
+            if (task?.taskType === TaskType.SUBTASK && task.parentTaskId) {
+              const parentTask = tasks.find((t) => t.id === task.parentTaskId);
+              if (parentTask?.taskType === TaskType.RECURRING_INSTANCE) {
+                return "This subtask belongs to a recurring instance and cannot be made recurring.";
+              }
+              if (parentTask?.taskType === TaskType.RECURRING_PARENT) {
+                return "This subtask belongs to a template and cannot be made recurring.";
+              }
+            }
+            return undefined;
+          })()}
+          hideCheckbox={task?.taskType === TaskType.RECURRING_PARENT}
         />
 
         <p className="text-xs text-gray-500 dark:text-gray-400">

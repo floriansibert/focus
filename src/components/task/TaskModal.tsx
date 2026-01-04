@@ -25,10 +25,11 @@ interface TaskModalProps {
   task?: Task;
   defaultQuadrant?: QuadrantType;
   defaultParentTaskId?: string;
+  defaultIsRecurring?: boolean;
   onEditTask?: (task: Task) => void;
 }
 
-export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParentTaskId, onEditTask }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParentTaskId, defaultIsRecurring, onEditTask }: TaskModalProps) {
   const { addTask, updateTask, toggleComplete, toggleStar, tasks, addSubtask, moveSubtaskToParent, detachSubtask } = useTaskStore();
   const { lastUsedQuadrant, setLastUsedQuadrant } = useUIStore();
 
@@ -137,8 +138,8 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
         setDueDate(undefined);
         setSelectedTags([]);
         setSelectedPeople([]);
-        setIsRecurring(false);
-        setRecurrence(undefined);
+        setIsRecurring(defaultIsRecurring || false);
+        setRecurrence(defaultIsRecurring ? { pattern: 'daily' as const, interval: 1 } : undefined);
         setIsStarred(false);
         setCompleted(false);
         setCompletedAt(undefined);
@@ -149,7 +150,7 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
       setErrors({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, task, defaultQuadrant]);
+  }, [isOpen, task, defaultQuadrant, defaultIsRecurring]);
 
   // Auto-expand subtasks if task has subtasks (separate effect to avoid form reset issues)
   useEffect(() => {
@@ -275,9 +276,15 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
       newErrors.title = 'Title is required';
     }
 
+    // Validate recurring task configuration
+    if (isRecurring && !recurrence) {
+      toast.error('Please configure the recurrence pattern');
+      return false;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [title]);
+  }, [title, isRecurring, recurrence]);
 
   const handleSubmit = useCallback(() => {
     if (!validate()) return;
@@ -323,7 +330,7 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
         recurrence: isRecurring ? recurrence : undefined,
         tags: selectedTags,
         people: selectedPeople,
-        taskType: TaskType.STANDARD,
+        taskType: isRecurring ? TaskType.RECURRING_PARENT : TaskType.STANDARD,
         order: 0,
       });
 
@@ -348,8 +355,26 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
     onClose();
   }, [validate, task, updateTask, addTask, title, description, quadrant, dueDate, selectedTags, selectedPeople, isRecurring, recurrence, completed, completedAt, isStarred, pendingSubtasks, addSubtask, onClose, defaultParentTaskId]);
 
+  // Global keyboard handler for Cmd+Enter
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleSubmit();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isOpen, handleSubmit]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      e.stopPropagation();
       handleSubmit();
     }
   };
@@ -441,6 +466,15 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
               >
                 {parentTask.title}
               </button>
+            </p>
+          </div>
+        )}
+
+        {/* Template Info Banner */}
+        {task && latestTask && latestTask.taskType === TaskType.RECURRING_PARENT && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-900 dark:text-blue-100">
+              <span className="font-semibold">Template:</span> This is a recurring template. Instances will be automatically generated based on the recurrence pattern.
             </p>
           </div>
         )}
@@ -582,7 +616,7 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
           if (!showSubtasks) return null;
 
           const subtaskCount = task
-            ? tasks.filter((t) => t.parentTaskId === task.id).length
+            ? tasks.filter((t) => t.parentTaskId === task.id && t.taskType === TaskType.SUBTASK).length
             : pendingSubtasks.length;
 
           return (
@@ -683,8 +717,30 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
           recurrence={recurrence}
           onRecurringChange={setIsRecurring}
           onRecurrenceChange={setRecurrence}
-          disabled={task?.taskType === TaskType.RECURRING_INSTANCE}
-          disabledReason="This is a recurring instance. To modify the recurrence pattern, edit the template instead."
+          disabled={(() => {
+            if (task?.taskType === TaskType.RECURRING_INSTANCE) return true;
+            if (task?.taskType === TaskType.SUBTASK && task.parentTaskId) {
+              const parentTask = tasks.find((t) => t.id === task.parentTaskId);
+              return parentTask?.taskType === TaskType.RECURRING_INSTANCE || parentTask?.taskType === TaskType.RECURRING_PARENT;
+            }
+            return false;
+          })()}
+          disabledReason={(() => {
+            if (task?.taskType === TaskType.RECURRING_INSTANCE) {
+              return "This is a recurring instance. To modify the recurrence pattern, edit the template instead.";
+            }
+            if (task?.taskType === TaskType.SUBTASK && task.parentTaskId) {
+              const parentTask = tasks.find((t) => t.id === task.parentTaskId);
+              if (parentTask?.taskType === TaskType.RECURRING_INSTANCE) {
+                return "This subtask belongs to a recurring instance and cannot be made recurring.";
+              }
+              if (parentTask?.taskType === TaskType.RECURRING_PARENT) {
+                return "This subtask belongs to a template and cannot be made recurring.";
+              }
+            }
+            return undefined;
+          })()}
+          hideCheckbox={task?.taskType === TaskType.RECURRING_PARENT || (!task && defaultIsRecurring)}
         />
 
         <p className="text-xs text-gray-500 dark:text-gray-400">

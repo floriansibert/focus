@@ -12,6 +12,7 @@ const RecurrencePatternValues = {
   DAILY: 'daily',
   WEEKLY: 'weekly',
   MONTHLY: 'monthly',
+  YEARLY: 'yearly',
   CUSTOM: 'custom'
 } as const;
 
@@ -52,10 +53,12 @@ export interface RecurrenceConfig {
   pattern: RecurrencePattern;
   interval: number; // e.g., every 2 days
   daysOfWeek?: number[]; // 0-6, for weekly
-  dayOfMonth?: number; // 1-31, for monthly
+  dayOfMonth?: number; // 1-31, for monthly/yearly
   weekOfMonth?: number; // 1-5 for 1st-5th, 0 for LAST (used with dayOfWeekInMonth)
-  dayOfWeekInMonth?: number; // 0-6 (Sun-Sat), for monthly patterns like "3rd Monday"
+  dayOfWeekInMonth?: number; // 0-6 (Sun-Sat), for monthly/yearly patterns like "3rd Monday"
+  monthOfYear?: number; // 0-11 (Jan-Dec), for yearly patterns
   endDate?: Date;
+  endAfterOccurrences?: number; // e.g., "after 10 occurrences"
   nextOccurrence?: Date;
 }
 

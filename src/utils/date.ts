@@ -2,6 +2,7 @@ import {
   addDays,
   addWeeks,
   addMonths,
+  addYears,
   setDate,
   getDay,
   getDaysInMonth,
@@ -112,6 +113,36 @@ function calculateMonthlyNext(lastDate: Date, recurrence: RecurrenceConfig): Dat
 }
 
 /**
+ * Calculate next occurrence for yearly patterns
+ */
+function calculateYearlyNext(lastDate: Date, recurrence: RecurrenceConfig): Date {
+  const { interval = 1, monthOfYear, dayOfMonth, weekOfMonth, dayOfWeekInMonth } = recurrence;
+
+  // Mode 1: Simple - preserve original month/day
+  if (monthOfYear === undefined) {
+    return addYears(lastDate, interval);
+  }
+
+  // Mode 2: Specific date (e.g., January 15 every year)
+  if (dayOfMonth !== undefined && weekOfMonth === undefined) {
+    const nextYear = addYears(lastDate, interval);
+    const daysInMonth = getDaysInMonth(new Date(nextYear.getFullYear(), monthOfYear));
+    const actualDay = Math.min(dayOfMonth, daysInMonth);
+    return new Date(nextYear.getFullYear(), monthOfYear, actualDay);
+  }
+
+  // Mode 3: Nth weekday of specific month (e.g., 1st Monday of January)
+  if (weekOfMonth !== undefined && dayOfWeekInMonth !== undefined) {
+    const nextYear = addYears(lastDate, interval);
+    const targetYearMonth = new Date(nextYear.getFullYear(), monthOfYear, 1);
+    const prevMonthEnd = new Date(targetYearMonth.getFullYear(), targetYearMonth.getMonth(), 0);
+    return findNthWeekdayOfMonth(prevMonthEnd, weekOfMonth, dayOfWeekInMonth, 1);
+  }
+
+  return addYears(lastDate, interval); // Fallback
+}
+
+/**
  * Calculate the next occurrence date based on recurrence configuration
  * Returns date normalized to start of day (midnight) for consistent scheduling
  */
@@ -140,6 +171,10 @@ export function calculateNextOccurrence(
       nextDate = calculateMonthlyNext(lastDate, recurrence);
       break;
 
+    case RecurrencePattern.YEARLY:
+      nextDate = calculateYearlyNext(lastDate, recurrence);
+      break;
+
     default:
       throw new Error(`Unknown pattern: ${recurrence.pattern}`);
   }
@@ -155,24 +190,93 @@ export function calculateNextOccurrence(
 export function shouldGenerateInstance(
   lastGeneratedDate: Date | undefined,
   recurrence: RecurrenceConfig,
-  now: Date = new Date()
+  now: Date = new Date(),
+  totalInstancesGenerated: number = 0
 ): boolean {
   if (!lastGeneratedDate) {
     return true; // First instance - create immediately
+  }
+
+  // Check if we've hit the occurrence limit
+  if (recurrence.endAfterOccurrences && totalInstancesGenerated >= recurrence.endAfterOccurrences) {
+    return false;
   }
 
   // Normalize all dates to start of day for consistent comparison
   const today = startOfDay(now);
   const nextOccurrence = calculateNextOccurrence(lastGeneratedDate, recurrence);
 
+  // Check if next occurrence is past end date
+  if (recurrence.endDate && nextOccurrence > recurrence.endDate) {
+    return false;
+  }
+
   return today >= nextOccurrence;
+}
+
+/**
+ * Calculate the next N occurrences for preview purposes
+ * Respects end date and occurrence count limits
+ */
+export function calculateNextNOccurrences(
+  startDate: Date,
+  recurrence: RecurrenceConfig,
+  count: number = 5,
+  now: Date = new Date()
+): { dates: Date[]; hasMore: boolean; totalPossible: number | null } {
+  const dates: Date[] = [];
+  let currentDate = startDate;
+  let occurrenceCount = 0;
+  const maxIterations = 100; // Safety limit
+
+  for (let i = 0; i < maxIterations && dates.length < count; i++) {
+    const nextDate = calculateNextOccurrence(currentDate, recurrence);
+    occurrenceCount++;
+
+    // Check end conditions
+    if (recurrence.endDate && nextDate > recurrence.endDate) {
+      break;
+    }
+
+    if (recurrence.endAfterOccurrences && occurrenceCount > recurrence.endAfterOccurrences) {
+      break;
+    }
+
+    // Only include future dates
+    if (nextDate >= startOfDay(now)) {
+      dates.push(nextDate);
+    }
+
+    currentDate = nextDate;
+  }
+
+  // Calculate if there are more occurrences beyond what we're showing
+  const hasMore = recurrence.endAfterOccurrences
+    ? occurrenceCount < recurrence.endAfterOccurrences
+    : !recurrence.endDate;
+
+  const totalPossible = recurrence.endAfterOccurrences || null;
+
+  return { dates, hasMore, totalPossible };
+}
+
+/**
+ * Format a date for preview display (e.g., "Mon, Jan 15, 2026")
+ */
+export function formatPreviewDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
 }
 
 /**
  * Format a recurrence config as human-readable text
  */
 export function formatRecurrence(recurrence: RecurrenceConfig): string {
-  const { pattern, interval = 1, daysOfWeek, dayOfMonth, weekOfMonth, dayOfWeekInMonth } = recurrence;
+  const { pattern, interval = 1, daysOfWeek, dayOfMonth, weekOfMonth, dayOfWeekInMonth, monthOfYear } = recurrence;
 
   // Daily pattern
   if (pattern === RecurrencePattern.DAILY) {
@@ -183,7 +287,10 @@ export function formatRecurrence(recurrence: RecurrenceConfig): string {
   if (pattern === RecurrencePattern.WEEKLY && daysOfWeek?.length) {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const days = daysOfWeek.map(d => dayNames[d]).join(', ');
-    return `Weekly on ${days}`;
+    if (interval === 1) {
+      return `Weekly on ${days}`;
+    }
+    return `Every ${interval} weeks on ${days}`;
   }
 
   // Weekly pattern - Simple
@@ -193,7 +300,8 @@ export function formatRecurrence(recurrence: RecurrenceConfig): string {
 
   // Monthly pattern - Specific date
   if (pattern === RecurrencePattern.MONTHLY && dayOfMonth !== undefined) {
-    return `Monthly on the ${dayOfMonth}${getOrdinalSuffix(dayOfMonth)}`;
+    const prefix = interval === 1 ? 'Monthly' : `Every ${interval} months`;
+    return `${prefix} on the ${dayOfMonth}${getOrdinalSuffix(dayOfMonth)}`;
   }
 
   // Monthly pattern - Nth weekday
@@ -201,12 +309,37 @@ export function formatRecurrence(recurrence: RecurrenceConfig): string {
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const occurrenceNames = ['Last', '1st', '2nd', '3rd', '4th', '5th'];
     const occurrence = weekOfMonth === 0 ? 'Last' : occurrenceNames[weekOfMonth];
-    return `Monthly on the ${occurrence} ${dayNames[dayOfWeekInMonth]}`;
+    const prefix = interval === 1 ? 'Monthly' : `Every ${interval} months`;
+    return `${prefix} on the ${occurrence} ${dayNames[dayOfWeekInMonth]}`;
   }
 
   // Monthly pattern - Simple
   if (pattern === RecurrencePattern.MONTHLY) {
     return interval === 1 ? 'Monthly' : `Every ${interval} months`;
+  }
+
+  // Yearly pattern - Specific date
+  if (pattern === RecurrencePattern.YEARLY && monthOfYear !== undefined && dayOfMonth !== undefined && weekOfMonth === undefined) {
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+    const prefix = interval === 1 ? 'Yearly' : `Every ${interval} years`;
+    return `${prefix} on ${monthNames[monthOfYear]} ${dayOfMonth}`;
+  }
+
+  // Yearly pattern - Nth weekday of month
+  if (pattern === RecurrencePattern.YEARLY && monthOfYear !== undefined && weekOfMonth !== undefined && dayOfWeekInMonth !== undefined) {
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const occurrenceNames = ['Last', '1st', '2nd', '3rd', '4th', '5th'];
+    const occurrence = weekOfMonth === 0 ? 'Last' : occurrenceNames[weekOfMonth];
+    const prefix = interval === 1 ? 'Yearly' : `Every ${interval} years`;
+    return `${prefix} on the ${occurrence} ${dayNames[dayOfWeekInMonth]} of ${monthNames[monthOfYear]}`;
+  }
+
+  // Yearly pattern - Simple
+  if (pattern === RecurrencePattern.YEARLY) {
+    return interval === 1 ? 'Yearly' : `Every ${interval} years`;
   }
 
   return 'Unknown';
@@ -223,25 +356,10 @@ function getOrdinalSuffix(n: number): string {
 
 /**
  * Format recurrence pattern with enhanced detail
- * Extends existing formatRecurrence with more detail
+ * Now just delegates to formatRecurrence since it includes all details
  */
 export function formatRecurrenceDetailed(recurrence: RecurrenceConfig): string {
-  const base = formatRecurrence(recurrence);
-
-  // Add days of week for weekly patterns
-  if (recurrence.pattern === RecurrencePattern.WEEKLY && recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-    const dayNames = recurrence.daysOfWeek
-      .map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d])
-      .join(', ');
-    return `${base} on ${dayNames}`;
-  }
-
-  // Add day of month for monthly patterns
-  if (recurrence.pattern === RecurrencePattern.MONTHLY && recurrence.dayOfMonth) {
-    return `${base} on the ${recurrence.dayOfMonth}${getOrdinalSuffix(recurrence.dayOfMonth)}`;
-  }
-
-  return base;
+  return formatRecurrence(recurrence);
 }
 
 /**

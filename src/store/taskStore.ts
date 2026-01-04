@@ -25,6 +25,7 @@ interface TaskStore {
   // Subtask management
   addSubtask: (parentTaskId: string, subtaskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'quadrant' | 'taskType' | 'parentTaskId'>) => string;
   getSubtasks: (parentTaskId: string) => Task[];
+  getInstances: (templateId: string) => Task[];
   deleteTaskWithSubtasks: (id: string) => { hasSubtasks: boolean; subtaskCount: number };
   moveTaskWithSubtasks: (id: string, toQuadrant: QuadrantType, newOrder: number) => void;
   reorderSubtasks: (parentTaskId: string, subtaskIds: string[]) => void;
@@ -473,8 +474,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     },
 
     // Get all subtasks for a parent task
-    // For RECURRING_PARENT tasks, this returns RECURRING_INSTANCE children
-    // For other tasks, this returns SUBTASK children
+    // Returns SUBTASK children for all task types
     getSubtasks: (parentTaskId) => {
       const parentTask = get().tasks.find((t) => t.id === parentTaskId);
 
@@ -482,17 +482,25 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         return [];
       }
 
-      // If parent is a recurring template, return instances
-      if (parentTask.taskType === TaskType.RECURRING_PARENT) {
-        return get().tasks.filter(
-          (t) => t.parentTaskId === parentTaskId && t.taskType === TaskType.RECURRING_INSTANCE
-        ).sort((a, b) => a.order - b.order);
-      }
-
-      // Otherwise, return subtasks
+      // Always return subtasks (not instances)
+      // Templates can have subtasks that get copied to instances
       return get().tasks.filter(
         (t) => t.parentTaskId === parentTaskId && t.taskType === TaskType.SUBTASK
       ).sort((a, b) => a.order - b.order);
+    },
+
+    // Get all instances for a template
+    // Returns RECURRING_INSTANCE children for RECURRING_PARENT tasks
+    getInstances: (templateId) => {
+      const template = get().tasks.find((t) => t.id === templateId);
+
+      if (!template) {
+        return [];
+      }
+
+      return get().tasks.filter(
+        (t) => t.parentTaskId === templateId && t.taskType === TaskType.RECURRING_INSTANCE
+      ).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Newest first
     },
 
     // Delete task with subtask validation

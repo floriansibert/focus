@@ -1,4 +1,5 @@
 import type { Task, QuadrantType } from '../types/task';
+import { TaskType } from '../types/task';
 import { calculateNextOccurrence } from './date';
 
 /**
@@ -8,6 +9,7 @@ export interface TemplateStats {
   totalInstances: number;
   completedInstances: number;
   activeInstances: number;
+  totalSubtasks: number;
   lastGeneratedDate: Date | null;
   nextScheduledDate: Date | null;
   completionRate: number; // 0-100
@@ -20,9 +22,17 @@ export function getTemplateStats(
   template: Task,
   allTasks: Task[]
 ): TemplateStats {
-  const instances = allTasks.filter(t => t.parentTaskId === template.id);
+  // Filter for instances only (not subtasks)
+  const instances = allTasks.filter(
+    t => t.parentTaskId === template.id && t.taskType === TaskType.RECURRING_INSTANCE
+  );
   const completed = instances.filter(t => t.completed);
   const active = instances.filter(t => !t.completed);
+
+  // Count subtasks (template structure)
+  const subtasks = allTasks.filter(
+    t => t.parentTaskId === template.id && t.taskType === TaskType.SUBTASK
+  );
 
   // Find most recent instance
   const sorted = [...instances].sort((a, b) =>
@@ -44,6 +54,7 @@ export function getTemplateStats(
     totalInstances: instances.length,
     completedInstances: completed.length,
     activeInstances: active.length,
+    totalSubtasks: subtasks.length,
     lastGeneratedDate: lastGenerated,
     nextScheduledDate: nextScheduled,
     completionRate: instances.length > 0

@@ -31,11 +31,13 @@ export function isRecurringInstance(task: Task): boolean {
 
 /**
  * Check if a task can have subtasks
- * Only standard tasks and recurring instances can have subtasks
+ * Standard tasks, recurring instances, and recurring parents (templates) can have subtasks
+ * Templates can have subtasks that will be copied to generated instances
  */
 export function canHaveSubtasks(task: Task): boolean {
   return task.taskType === TaskType.STANDARD ||
-         task.taskType === TaskType.RECURRING_INSTANCE;
+         task.taskType === TaskType.RECURRING_INSTANCE ||
+         task.taskType === TaskType.RECURRING_PARENT;
 }
 
 /**
