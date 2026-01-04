@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Moon, Sun, Tag, Users, Filter, X, LayoutGrid, BarChart3, History, Download, Upload, Info, Settings, Calendar, BookOpen, Timer, Wrench, Play, Pause, RotateCcw, Repeat } from 'lucide-react';
+import { Moon, Sun, Tag, Users, Filter, X, LayoutGrid, BarChart3, History, Download, Upload, Info, Settings, Calendar, CalendarDays, CheckCircle2, BookOpen, Timer, Wrench, Play, Pause, RotateCcw, Repeat } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
 import { useTaskStore } from '../../store/taskStore';
 import { TagManager } from '../task/TagManager';
@@ -204,7 +204,9 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                       : "Filter view modes"
                   }
                 >
-                  <Calendar size={18} />
+                  {activeFilterMode === null && <LayoutGrid size={18} />}
+                  {activeFilterMode === ViewMode.TODAY && <CalendarDays size={18} />}
+                  {activeFilterMode === ViewMode.COMPLETED && <CheckCircle2 size={18} />}
                   {activeFilterMode === ViewMode.TODAY && <span>Today</span>}
                   {activeFilterMode === ViewMode.COMPLETED && <span>Completed</span>}
                   {activeFilterMode === null && <span>Plan</span>}
@@ -223,7 +225,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
 
                 {/* Filter Mode Dropdown Panel */}
                 {isTodayViewDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-[38rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                  <div className="absolute right-0 mt-2 w-[30rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                     <div className="p-4 space-y-4">
                       {/* Mode Selector */}
                       <div>
@@ -235,6 +237,7 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                             onClick={() => setActiveFilterMode(null)}
                             className={`
                               px-3 py-2 text-sm rounded transition-colors
+                              flex flex-col items-center gap-1
                               ${
                                 activeFilterMode === null
                                   ? 'bg-blue-600 text-white'
@@ -242,12 +245,14 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                               }
                             `}
                           >
-                            Plan
+                            <LayoutGrid size={18} />
+                            <span>Plan</span>
                           </button>
                           <button
                             onClick={() => setActiveFilterMode(ViewMode.TODAY)}
                             className={`
                               px-3 py-2 text-sm rounded transition-colors
+                              flex flex-col items-center gap-1
                               ${
                                 activeFilterMode === ViewMode.TODAY
                                   ? 'bg-blue-600 text-white'
@@ -255,12 +260,14 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                               }
                             `}
                           >
-                            Today
+                            <CalendarDays size={18} />
+                            <span>Today</span>
                           </button>
                           <button
                             onClick={() => setActiveFilterMode(ViewMode.COMPLETED)}
                             className={`
                               px-3 py-2 text-sm rounded transition-colors
+                              flex flex-col items-center gap-1
                               ${
                                 activeFilterMode === ViewMode.COMPLETED
                                   ? 'bg-blue-600 text-white'
@@ -268,7 +275,8 @@ export function Header({ onExport, onImport, onAbout, onHelp, onSettings }: Head
                               }
                             `}
                           >
-                            Completed
+                            <CheckCircle2 size={18} />
+                            <span>Completed</span>
                           </button>
                         </div>
                       </div>
