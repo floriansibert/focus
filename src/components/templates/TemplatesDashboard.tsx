@@ -7,15 +7,17 @@ import { TemplateCard } from './TemplateCard';
 import { TaskModal } from '../task/TaskModal';
 import { TaskSidePanel } from '../task/TaskSidePanel';
 import { EmptyState } from '../ui/EmptyState';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import type { Task } from '../../types/task';
 import toast from 'react-hot-toast';
 
 export function TemplatesDashboard() {
-  const { tasks, deleteTask, toggleTemplatePause } = useTaskStore();
+  const { tasks, deleteTask, toggleTemplatePause, updateTask } = useTaskStore();
   const focusedTaskId = useUIStore((state) => state.focusedTaskId);
   const setFocusedTask = useUIStore((state) => state.setFocusedTask);
   const [selectedTemplate, setSelectedTemplate] = useState<Task | null>(null);
   const [viewingInstancesFor, setViewingInstancesFor] = useState<Task | null>(null);
+  const [deleteConfirmTemplate, setDeleteConfirmTemplate] = useState<Task | null>(null);
 
   // Get all RECURRING_PARENT tasks (templates)
   const templates = useMemo(
@@ -46,26 +48,33 @@ export function TemplatesDashboard() {
     const template = templates.find((t) => t.id === templateId);
     if (!template) return;
 
-    const instanceCount = tasks.filter((t) => t.parentTaskId === templateId).length;
+    setDeleteConfirmTemplate(template);
+  };
 
-    const message =
-      instanceCount > 0
-        ? `Delete template and ${instanceCount} instance${instanceCount === 1 ? '' : 's'}?`
-        : 'Delete this template?';
+  const confirmDelete = () => {
+    if (!deleteConfirmTemplate) return;
 
-    if (window.confirm(message)) {
-      // Delete template
-      deleteTask(templateId);
+    const instanceCount = tasks.filter((t) => t.parentTaskId === deleteConfirmTemplate.id).length;
 
-      // Delete all instances
-      tasks
-        .filter((t) => t.parentTaskId === templateId)
-        .forEach((instance) => deleteTask(instance.id));
+    // Convert all instances to standard tasks
+    tasks
+      .filter((t) => t.parentTaskId === deleteConfirmTemplate.id)
+      .forEach((instance) => {
+        updateTask(instance.id, {
+          parentTaskId: undefined,
+          taskType: TaskType.STANDARD,
+        });
+      });
 
-      toast.success(
-        `Deleted template${instanceCount > 0 ? ` and ${instanceCount} instance${instanceCount === 1 ? '' : 's'}` : ''}`
-      );
-    }
+    // Delete template
+    deleteTask(deleteConfirmTemplate.id);
+
+    const successMessage = instanceCount > 0
+      ? `Template deleted. ${instanceCount} instance${instanceCount === 1 ? '' : 's'} converted to standalone task${instanceCount === 1 ? '' : 's'}.`
+      : 'Template deleted';
+
+    toast.success(successMessage);
+    setDeleteConfirmTemplate(null);
   };
 
   const handleTogglePause = (templateId: string) => {
@@ -175,6 +184,23 @@ export function TemplatesDashboard() {
           isOpen={true}
           task={viewingInstancesFor}
           onClose={handleCloseSidePanel}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmTemplate && (
+        <ConfirmDialog
+          isOpen={true}
+          onClose={() => setDeleteConfirmTemplate(null)}
+          title="Delete Template"
+          message={
+            tasks.filter((t) => t.parentTaskId === deleteConfirmTemplate.id).length > 0
+              ? `Delete template? ${tasks.filter((t) => t.parentTaskId === deleteConfirmTemplate.id).length} instance${tasks.filter((t) => t.parentTaskId === deleteConfirmTemplate.id).length === 1 ? '' : 's'} will be converted to standalone task${tasks.filter((t) => t.parentTaskId === deleteConfirmTemplate.id).length === 1 ? '' : 's'}.`
+              : 'Delete this template?'
+          }
+          confirmText="Delete"
+          variant="danger"
+          onConfirm={confirmDelete}
         />
       )}
     </div>

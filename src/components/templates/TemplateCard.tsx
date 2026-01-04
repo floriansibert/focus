@@ -1,11 +1,11 @@
 import { Repeat, Edit2, Eye, Trash2, Calendar, BarChart2, Star, Pause, Play } from 'lucide-react';
 import type { Task } from '../../types/task';
-import { QUADRANT_INFO } from '../../types/quadrant';
 import { useTaskStore } from '../../store/taskStore';
 import { getTemplateStats } from '../../utils/templateHelpers';
 import { formatRecurrenceDetailed, formatNextOccurrence } from '../../utils/date';
 import { Badge } from '../ui/Badge';
 import { PersonBadge } from '../ui/PersonBadge';
+import { QuadrantIcon } from '../task/QuadrantIcon';
 
 interface TemplateCardProps {
   template: Task;
@@ -21,7 +21,6 @@ export function TemplateCard({ template, onEdit, onViewInstances, onDelete, onTo
   const allPeople = useTaskStore((state) => state.people);
 
   const stats = getTemplateStats(template, allTasks);
-  const quadrantInfo = QUADRANT_INFO[template.quadrant];
 
   // Get tags and people for display
   const templateTags = allTags.filter((tag) => template.tags.includes(tag.id));
@@ -41,9 +40,9 @@ export function TemplateCard({ template, onEdit, onViewInstances, onDelete, onTo
             Paused
           </span>
         )}
-        <span className={`inline-flex items-center px-2 py-1 rounded-md border-2 text-xs font-semibold flex-shrink-0 text-gray-900 dark:text-gray-100 ${quadrantInfo.color}`}>
-          {quadrantInfo.title}
-        </span>
+        <div className="p-1 rounded border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+          <QuadrantIcon selectedQuadrant={template.quadrant} size={24} />
+        </div>
         <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex-1 line-clamp-2">
           {template.title}
         </h3>
