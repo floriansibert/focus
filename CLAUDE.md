@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Focus is an Eisenhower Priority Matrix task management application built with React, TypeScript, and Vite. It helps users organize tasks across four quadrants (Urgent/Important, Not Urgent/Important, Urgent/Not Important, Not Urgent/Not Important) with support for time tracking, recurring tasks, analytics, and offline-first functionality.
+Focus is an Eisenhower Priority Matrix task management application built with React, TypeScript, and Vite. It helps users organize tasks across four quadrants (Urgent/Important, Not Urgent/Important, Urgent/Not Important, Not Urgent/Not Important) with support for time tracking, recurring tasks with template management, advanced view modes (Today/Completed), analytics, and offline-first functionality.
 
 ## Development Commands
 
@@ -30,8 +30,8 @@ npm run preview
 
 The app uses Zustand for state management with four primary stores:
 
-- **`taskStore`** (`src/store/taskStore.ts`): Manages tasks, tags, time tracking, and persistence to IndexedDB
-- **`uiStore`** (`src/store/uiStore.ts`): Handles UI state (theme, active view, filters, command palette)
+- **`taskStore`** (`src/store/taskStore.ts`): Manages tasks, tags, time tracking, subtask operations (reparenting, detachment), template pause/resume, and persistence to IndexedDB
+- **`uiStore`** (`src/store/uiStore.ts`): Handles UI state (theme, active view including templates, filters, view modes, command palette, export reminders)
 - **`historyStore`** (`src/store/historyStore.ts`): Manages undo/redo functionality
 - **`eventHistoryStore`** (`src/store/eventHistoryStore.ts`): Manages history view filtering and display
 
@@ -53,7 +53,8 @@ src/components/
 ├── filters/       # Search bar and filter panel
 ├── layout/        # Header, command palette, keyboard shortcuts
 ├── matrix/        # Main 4-quadrant grid and task cards (uses @dnd-kit)
-├── task/          # Task modal, tag selector/manager, timer, recurring config
+├── task/          # Task modal, tag selector/manager, timer, recurring config, parent selector, instance list
+├── templates/     # Templates dashboard for recurring task management
 └── ui/            # Reusable components (Button, Modal, Input, Badge, etc.)
 ```
 
@@ -73,17 +74,62 @@ Uses `@dnd-kit` for task movement between quadrants:
 - `SUBTASK`: Child task of a parent task
 
 **Subtasks**:
-- Only `STANDARD` and `RECURRING_INSTANCE` tasks can have subtasks
+- Only `STANDARD`, `RECURRING_INSTANCE`, and `RECURRING_PARENT` tasks can have subtasks
 - Subtasks inherit the parent's quadrant
 - Parent tasks auto-complete when all subtasks are completed
 - Parent auto-uncompletes if any subtask is uncompleted
+- Subtasks can be reparented to a different parent via `moveSubtaskToParent(subtaskId, newParentId)`
+- Subtasks can be detached to become standalone tasks via `detachSubtask(subtaskId)`
+- Template subtasks are automatically copied to generated instances
+
+**Templates (Recurring Parents)**:
+- RECURRING_PARENT tasks are managed in the dedicated Templates view (Ctrl+T)
+- Templates never appear in the matrix - they generate instances
+- Templates can have subtasks that are copied to all generated instances
+- Templates can be paused to stop instance generation via `toggleTemplatePause`
+- Template stats tracked via `getTemplateStats` from `src/utils/templateHelpers.ts`
+- Instances are linked via `parentTaskId` and can be viewed in TaskSidePanel
+- Deleting a template converts all instances to standalone tasks
 
 ### Recurring Tasks
 
-- Parent tasks have `isRecurring: true` and a `recurrence` config
+**Template Management**:
+- Templates (RECURRING_PARENT) are managed in dedicated Templates view (accessible via Ctrl+T)
 - Hook `useRecurringTasks` checks every 60s for tasks needing new instances
-- Child instances are created with `parentTaskId` reference and `isRecurring: false`
+- Templates can be paused/resumed via `isPaused` flag to control instance generation
+- Use `toggleTemplatePause(templateId)` to pause/resume templates
+
+**Configuration**:
+- 10+ presets available in RecurringTaskConfig component:
+  - Common: Daily, Weekdays, Weekly, Bi-weekly, Monthly, Quarterly
+  - Advanced: 1st Monday, 15th of month, Last Friday, Last day of month
+- Complex patterns supported: Nth weekday of month, specific dates, custom intervals
 - Date calculation utilities in `src/utils/date.ts`
+
+**Instance Management**:
+- Child instances created with `parentTaskId` reference and `taskType: RECURRING_INSTANCE`
+- Template subtasks automatically copied to new instances
+- Deleting template converts instances to standalone tasks
+
+### View Modes
+
+The app supports specialized filter modes that provide focused task views:
+
+**Today View** (`ViewMode.TODAY`):
+- Activated via filter panel "Today's View" toggle
+- Three configurable components (OR logic):
+  - **Overdue tasks**: Tasks with due dates before today
+  - **Due soon**: Tasks due today or within N days (0-30 days or infinity)
+  - **Starred tasks**: All starred tasks regardless of due date
+- Configure via `todayViewDaysAhead` and `todayViewComponents` in uiStore
+- Respects standard filters (tags, people, search)
+
+**Completed View** (`ViewMode.COMPLETED`):
+- Activated via filter panel "Completed Tasks" toggle
+- Shows only completed tasks within selected timeframe
+- Timeframe presets: today, yesterday, this week, last week, 2 weeks ago, this month, last month, custom range
+- Date range calculated via `calculateCompletedViewDateRange` utility
+- State managed via `completedViewTimeframe` and `completedViewCustomRange`
 
 ### Keyboard Shortcuts
 
@@ -93,6 +139,7 @@ Defined in `App.tsx` using `useKeyboardShortcuts` hook:
 - `Ctrl+M`: Matrix view
 - `Ctrl+A`: Analytics view
 - `Ctrl+H`: History view
+- `Ctrl+T`: Templates view
 - `Ctrl+1/2/3/4`: Add task to quadrant 1/2/3/4
 - `Ctrl+D`: Toggle dark mode
 - `Ctrl+L`: Clear filters
@@ -110,8 +157,11 @@ Filter state lives in `uiStore`:
 - Date range
 - Per-quadrant starred filter
 - Completed-only mode with date range
+- View mode state (`activeFilterMode`: 'today' | 'completed' | null)
+- Today view configuration (days ahead, component toggles)
+- Completed view timeframe and custom range
 
-Applied in `useTaskFilters` hook which returns filtered task array.
+Applied in `useTaskFilters` hook with multi-phase filtering logic that handles parent-child relationships and view modes.
 
 ### Theming
 
@@ -123,7 +173,7 @@ Applied in `useTaskFilters` hook which returns filtered task array.
 ### Type System
 
 Key types in `src/types/`:
-- **task.ts**: Task, Tag, Person, RecurrenceConfig, FilterState, QuadrantType, TaskType, HistoryEntry, DataOperation
+- **task.ts**: Task, Tag, Person, RecurrenceConfig, FilterState, QuadrantType, TaskType, ViewMode, HistoryEntry, DataOperation
 
 QuadrantType and TaskType use const object pattern for type-safe enums.
 
@@ -172,6 +222,14 @@ Current version 9 schema in `src/lib/db.ts`:
 - Overlay component in `src/components/pomodoro/PomodoroOverlay.tsx`
 - Can be linked to specific tasks via `focusedTaskId`
 
+### Export Reminders
+
+- Configurable reminder system to encourage regular data backups
+- Hook `useExportReminder` checks last export from `dataOperationLogger`
+- State in `uiStore`: `exportReminderEnabled`, `exportReminderFrequencyDays` (7/14/30/90 days)
+- Banner component `ExportReminderBanner` with Export/Snooze/Dismiss actions
+- Export operations logged to `dataOperations` table via `dataOperationLogger`
+
 ## Common Development Patterns
 
 ### Adding a New Task Action
@@ -211,6 +269,26 @@ Current version 9 schema in `src/lib/db.ts`:
   - `areAllSubtasksCompleted(task, tasks)`: Check completion status
   - `isSubtask(task)`: Check if task is a subtask
 - Parent completion auto-updates are handled in taskStore via `updateParentCompletionStatus`
+
+### Working with Templates
+
+**Creating a Template:**
+1. Set `taskType: TaskType.RECURRING_PARENT` and `isRecurring: true`
+2. Configure `recurrence` object with pattern, interval, and optional constraints
+3. Use presets from `RecurringTaskConfig.RECURRING_PRESETS` or custom config
+4. Templates automatically hidden from matrix view
+5. Add subtasks to template - they'll be copied to all instances
+
+**Managing Template Lifecycle:**
+- Pause/resume: `toggleTemplatePause(templateId)` - stops instance generation
+- View instances: Use `getInstances(templateId)` from taskStore
+- Get statistics: Use `getTemplateStats(template, allTasks)` from templateHelpers
+- Delete template: Instances automatically converted to standalone tasks
+
+**Instance Generation:**
+- Automatic via `useRecurringTasks` hook (60s interval)
+- Respects `isPaused` flag and `endDate`/`endAfterOccurrences` limits
+- Subtasks cloned from template with proper parentTaskId references
 
 ## Tech Stack
 

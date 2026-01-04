@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { BookOpen, CheckCircle, Clock, Users, Filter, BarChart3, Download, Keyboard, AlertCircle, Calendar, XCircle } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Users, Filter, BarChart3, Download, Keyboard, AlertCircle, Calendar, XCircle, Eye } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { useUIStore } from '../../store/uiStore';
 
@@ -10,7 +10,7 @@ interface HelpModalProps {
   onOpenShortcuts?: () => void;
 }
 
-type Section = 'getting-started' | 'managing-tasks' | 'advanced-features' | 'search-filters' | 'analytics-history' | 'data-privacy' | 'keyboard-shortcuts';
+type Section = 'getting-started' | 'managing-tasks' | 'advanced-features' | 'search-filters' | 'view-modes' | 'analytics-history' | 'data-privacy' | 'keyboard-shortcuts';
 
 export function HelpModal({ isOpen, onClose, initialSection, onOpenShortcuts }: HelpModalProps) {
   const { helpModalSection, setHelpModalSection } = useUIStore();
@@ -104,6 +104,7 @@ export function HelpModal({ isOpen, onClose, initialSection, onOpenShortcuts }: 
     { id: 'managing-tasks' as Section, label: 'Managing Tasks', icon: CheckCircle },
     { id: 'advanced-features' as Section, label: 'Advanced Features', icon: Clock },
     { id: 'search-filters' as Section, label: 'Search & Filters', icon: Filter },
+    { id: 'view-modes' as Section, label: 'View Modes', icon: Eye },
     { id: 'analytics-history' as Section, label: 'Analytics & History', icon: BarChart3 },
     { id: 'data-privacy' as Section, label: 'Data & Privacy', icon: Download },
     { id: 'keyboard-shortcuts' as Section, label: 'Keyboard Shortcuts', icon: Keyboard },
@@ -338,21 +339,65 @@ export function HelpModal({ isOpen, onClose, initialSection, onOpenShortcuts }: 
                 <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-                    <span><strong className="text-gray-900 dark:text-gray-100">Patterns</strong>: Daily, weekly, monthly, or custom intervals</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Patterns</strong>: Choose from 10+ presets (Daily, Weekdays, 1st Monday, Last Friday, etc.) or create custom intervals</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-                    <span><strong className="text-gray-900 dark:text-gray-100">Parent Task</strong>: The template that generates new instances</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Templates</strong>: The parent template that defines the recurring task structure</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-                    <span><strong className="text-gray-900 dark:text-gray-100">Instances</strong>: Individual tasks created from the parent</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Instances</strong>: Individual tasks automatically created from templates based on schedule</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-                    <span>The app automatically generates new instances based on your schedule</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Subtasks</strong>: Add subtasks to templates - they're automatically copied to all generated instances</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span>The app generates new instances every 60 seconds based on your recurrence schedule</span>
                   </li>
                 </ul>
+              </div>
+
+              <div>
+                <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  Managing Templates
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Access the dedicated Templates view to manage all your recurring task templates.
+                </p>
+                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Templates View</strong>: Press <kbd className="px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 rounded">Ctrl+T</kbd> or use the header toolbar to access templates</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">View Instances</strong>: Click the eye icon on any template card to see all generated instances</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Template Names</strong>: Click template names in instance task cards to navigate to the template</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Pause/Resume</strong>: Click pause icon on template to stop instance generation, resume to restart</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Template Stats</strong>: View total instances, completion rate, next scheduled date, and subtask count</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span>Deleting a template converts all instances to standalone tasks (preserves your work)</span>
+                  </li>
+                </ul>
+                <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg">
+                  <p className="text-xs text-purple-900 dark:text-purple-100">
+                    <strong>Note:</strong> Templates never appear in the main matrix view - only their generated instances are shown there.
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -360,22 +405,39 @@ export function HelpModal({ isOpen, onClose, initialSection, onOpenShortcuts }: 
                   Subtasks
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  Break down complex tasks into smaller, manageable steps.
+                  Break down complex tasks into smaller, manageable steps with powerful organizational features.
                 </p>
                 <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-                    <span>Click the subtask icon on a task card to add subtasks</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Creating Subtasks</strong>: Click the subtask icon on a task card or open the task modal to add subtasks</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-                    <span>Parent task shows progress: "2 of 5 subtasks completed"</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Progress Tracking</strong>: Parent task shows completion status like "2 of 5 subtasks completed"</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-                    <span>Parent task auto-completes when all subtasks are done</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Auto-Completion</strong>: Parent task automatically completes when all subtasks are done</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Reparenting</strong>: Move subtasks to different parent tasks via the subtask's task modal</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Detaching</strong>: Convert subtasks into standalone tasks via the subtask's task modal</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span>Subtasks inherit the quadrant of their parent task</span>
                   </li>
                 </ul>
+                <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <p className="text-xs text-amber-900 dark:text-amber-100">
+                    <strong>Tip:</strong> Use reparenting to reorganize subtasks when project structure changes, or detach to promote a subtask to a full task.
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -497,6 +559,90 @@ export function HelpModal({ isOpen, onClose, initialSection, onOpenShortcuts }: 
             </div>
           </section>
 
+          {/* View Modes */}
+          <section id="view-modes" className="scroll-mt-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+              <Eye size={24} />
+              View Modes
+            </h2>
+
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Focus provides specialized view modes that help you concentrate on specific subsets of tasks. Access these modes via the filter panel in the header.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  Today's View
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Activate "Today's View" from the filter panel to see tasks that need immediate attention. This mode uses three configurable components with OR logic:
+                </p>
+                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Overdue Tasks</strong>: Shows tasks with due dates before today</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Due Soon</strong>: Shows tasks due today or within N days ahead (configurable: 0-30 days or infinity)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Starred Tasks</strong>: Shows all starred tasks regardless of due date</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span>Configure which components are active and the lookahead period in Settings</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span>Today's View respects other active filters (tags, people, search)</span>
+                  </li>
+                </ul>
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-xs text-blue-900 dark:text-blue-100">
+                    <strong>Tip:</strong> Set "days ahead" to 0 to show only overdue and today's tasks, or set to infinity to include all future tasks.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  Completed View
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Activate "Completed Tasks" from the filter panel to review your accomplishments within a selected timeframe.
+                </p>
+                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Timeframe Presets</strong>: Today, Yesterday, This Week, Last Week, 2 Weeks Ago, This Month, Last Month</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Custom Range</strong>: Select any start and end date for custom analysis</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span>Only completed tasks within the selected timeframe are shown</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span>Use this view to review productivity across different periods</span>
+                  </li>
+                </ul>
+                <div className="mt-3 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-xs text-green-900 dark:text-green-100">
+                    <strong>Productivity Tip:</strong> Review your completed tasks weekly to identify patterns and optimize your workflow.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Analytics & History */}
           <section id="analytics-history" className="scroll-mt-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
@@ -594,6 +740,42 @@ export function HelpModal({ isOpen, onClose, initialSection, onOpenShortcuts }: 
                 <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
                   <p className="text-xs text-blue-900 dark:text-blue-100">
                     <strong>Tip:</strong> Export regularly to create backups and prevent data loss.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  Export Reminder Banner
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Focus helps you remember to export your data regularly with a configurable reminder system.
+                </p>
+                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Reminder Frequency</strong>: Configure in Settings to remind every 7, 14, 30, or 90 days after last export</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Snooze Options</strong>: Snooze the banner for 1, 3, or 7 days if you're not ready to export</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Dismiss</strong>: Permanently dismiss the banner until the next reminder period</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span><strong className="text-gray-900 dark:text-gray-100">Quick Export</strong>: Click "Export Now" in the banner to immediately open export options</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                    <span>Banner appears at the top of the matrix view when a reminder is due</span>
+                  </li>
+                </ul>
+                <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg">
+                  <p className="text-xs text-orange-900 dark:text-orange-100">
+                    <strong>Best Practice:</strong> Set reminder frequency to 7 or 14 days for critical data, or 30-90 days for less frequent backups.
                   </p>
                 </div>
               </div>
