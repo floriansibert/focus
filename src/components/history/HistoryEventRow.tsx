@@ -21,7 +21,7 @@ interface HistoryEventRowProps {
   onTaskClick: (taskId: string) => void;
 }
 
-const ACTION_ICONS: Record<string, React.ComponentType> = {
+const ACTION_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   task_added: Plus,
   task_updated: Edit2,
   task_deleted: Trash2,

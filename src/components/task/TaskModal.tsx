@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronDown, Check, Plus, X, CornerDownRight } from 'lucide-react';
+import { ChevronDown, Plus, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { DatePicker } from '../ui/DatePicker';
 import { Button } from '../ui/Button';
-import { Badge } from '../ui/Badge';
 import { RecurringTaskConfig } from './RecurringTaskConfig';
 import { SubtaskList } from './SubtaskList';
-import { SubtaskProgressPie } from '../ui/SubtaskProgressPie';
 import { ParentSelectorModal } from './ParentSelectorModal';
 import { QuadrantIcon } from './QuadrantIcon';
 import { CompactQuadrantSelector } from './CompactQuadrantSelector';
@@ -15,7 +13,6 @@ import { CompactMetadataBar } from './CompactMetadataBar';
 import { QuadrantType, TaskType, type Task, type RecurrenceConfig } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
 import { useUIStore } from '../../store/uiStore';
-import { QUADRANT_INFO } from '../../types/quadrant';
 import { isSubtask, canHaveSubtasks } from '../../utils/taskHelpers';
 import toast from 'react-hot-toast';
 

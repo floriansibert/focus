@@ -779,15 +779,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           const updatedParent = get().tasks.find((t) => t.id === parentTaskId);
           if (updatedParent) {
             historyLogger.logTaskUpdated(
-              updatedParent,
+              updatedParent.id,
+              updatedParent.title,
+              updatedParent.quadrant,
               parent,
-              [
-                {
-                  field: 'completedAt',
-                  oldValue: parent.completedAt,
-                  newValue: latestCompletedAt
-                }
-              ]
+              updatedParent
             );
           }
         }

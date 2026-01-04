@@ -5,6 +5,14 @@ import { useTaskStore } from '../../store/taskStore';
 import { calculateQuadrantDistribution } from '../../lib/analytics';
 import { getContrastColor } from '../../utils/colorHelpers';
 
+interface QuadrantDistribution {
+  quadrant: string;
+  label: string;
+  count: number;
+  percentage: number;
+  color: string;
+}
+
 // Icon mapping for color-blind support
 const QUADRANT_ICONS = {
   'urgent-important': AlertCircle,
@@ -42,7 +50,7 @@ export function QuadrantDistribution() {
     innerRadius: number;
     outerRadius: number;
     percent: number;
-    payload: Record<string, unknown>;
+    payload: QuadrantDistribution;
   }) => {
     // Hide labels for slices < 5%
     if (percent < 0.05) return null;
@@ -56,7 +64,7 @@ export function QuadrantDistribution() {
       <text
         x={x}
         y={y}
-        fill={getContrastColor(payload.color)}
+        fill={getContrastColor(payload.color as string)}
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         className="text-sm font-medium"
@@ -67,38 +75,41 @@ export function QuadrantDistribution() {
   };
 
   // Custom legend with counts
-  const CustomLegend = ({ payload }: { payload: Array<Record<string, unknown>> }) => (
-    <div className="flex flex-wrap justify-center gap-4 mt-4">
-      {payload.map((entry: Record<string, unknown>, index: number) => (
-        <div
-          key={index}
-          className="flex items-center gap-2"
-          role="listitem"
-        >
+  const CustomLegend = ({ payload }: { payload?: Array<any> }) => {
+    if (!payload) return null;
+    return (
+      <div className="flex flex-wrap justify-center gap-4 mt-4">
+        {payload.map((entry: any, index: number) => (
           <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: entry.color }}
-            aria-hidden="true"
-          />
-          <span className="text-sm text-gray-700 dark:text-gray-300">
-            {entry.payload.label} ({entry.payload.count})
-          </span>
-        </div>
-      ))}
-    </div>
-  );
+            key={index}
+            className="flex items-center gap-2"
+            role="listitem"
+          >
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: entry.color as string }}
+              aria-hidden="true"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              {entry.payload?.label} ({entry.payload?.count})
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   // Enhanced tooltip
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: Record<string, unknown> }> }) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<any> }) => {
     if (!active || !payload || !payload.length) return null;
 
-    const data = payload[0].payload;
+    const data = payload[0].payload as QuadrantDistribution;
     const Icon = QUADRANT_ICONS[data.quadrant as keyof typeof QUADRANT_ICONS];
 
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-lg">
         <div className="flex items-center gap-2 mb-2">
-          <Icon size={18} style={{ color: data.color }} />
+          <Icon size={18} style={{ color: data.color as string }} />
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {data.label}
           </p>
@@ -133,11 +144,11 @@ export function QuadrantDistribution() {
           >
             <PieChart>
               <Pie
-                data={distribution}
+                data={distribution as any}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={renderCustomLabel}
+                label={renderCustomLabel as any}
                 outerRadius="80%"
                 fill="#8884d8"
                 dataKey="count"
@@ -147,8 +158,8 @@ export function QuadrantDistribution() {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip content={CustomTooltip} />
-              <Legend content={CustomLegend} />
+              <Tooltip content={CustomTooltip as any} />
+              <Legend content={CustomLegend as any} />
             </PieChart>
           </ResponsiveContainer>
           </div>

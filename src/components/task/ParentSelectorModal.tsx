@@ -125,7 +125,7 @@ export function ParentSelectorModal({
                   {/* Quadrant header */}
                   <div className="flex items-center gap-2 mb-3">
                     <Badge color={quadrantInfo.color} size="sm">
-                      {quadrantInfo.label}
+                      {quadrantInfo.title}
                     </Badge>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       {quadrantTasks.length} {quadrantTasks.length === 1 ? 'task' : 'tasks'}

@@ -26,7 +26,7 @@ import { QuadrantType, TaskType, ViewMode } from './types/task';
 
 function App() {
   const { loadFromDB, addTask, addTag } = useTaskStore();
-  const { activeView, setActiveView, toggleCommandPalette, toggleTheme, clearFilters, focusedQuadrant, setFocusedQuadrant, activeFilterMode, setActiveFilterMode } =
+  const { activeView, setActiveView, toggleCommandPalette, toggleTheme, clearFilters, focusedQuadrant, setFocusedQuadrant } =
     useUIStore();
   const [error, setError] = useState<string | null>(null);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);

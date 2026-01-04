@@ -481,49 +481,51 @@ export const useUIStore = create<UIStore>()(
         completedViewTimeframe: state.completedViewTimeframe,
         completedViewCustomRange: state.completedViewCustomRange,
       }),
-      merge: (persistedState: Record<string, unknown>, currentState) => {
+      merge: (persistedState: unknown, currentState) => {
+        const state = persistedState as Record<string, any>;
+
         // Migration: Convert old showTodayView to new activeFilterMode
-        let activeFilterMode = persistedState?.activeFilterMode ?? null;
-        if (persistedState?.showTodayView === true && !activeFilterMode) {
+        let activeFilterMode = state?.activeFilterMode ?? null;
+        if (state?.showTodayView === true && !activeFilterMode) {
           activeFilterMode = ViewModeEnum.TODAY;
         }
 
         return {
           ...currentState,
-          ...persistedState,
-          collapsedTasks: new Set(persistedState?.collapsedTasks || []),
-          completedTasksCutoffDate: persistedState?.completedTasksCutoffDate
-            ? new Date(persistedState.completedTasksCutoffDate)
+          ...(state || {}),
+          collapsedTasks: new Set(state?.collapsedTasks || []),
+          completedTasksCutoffDate: state?.completedTasksCutoffDate
+            ? new Date(state.completedTasksCutoffDate)
             : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          completedLookbackDays: persistedState?.completedLookbackDays ?? 7,
-          showCompletedOnly: persistedState?.showCompletedOnly ?? false,
-          completedDateRange: persistedState?.completedDateRange
+          completedLookbackDays: state?.completedLookbackDays ?? 7,
+          showCompletedOnly: state?.showCompletedOnly ?? false,
+          completedDateRange: state?.completedDateRange
             ? {
-                start: new Date(persistedState.completedDateRange.start),
-                end: new Date(persistedState.completedDateRange.end),
+                start: new Date(state.completedDateRange.start),
+                end: new Date(state.completedDateRange.end),
               }
             : null,
-          historyRetentionDays: persistedState?.historyRetentionDays ?? 7,
-          exportReminderEnabled: persistedState?.exportReminderEnabled ?? true,
-          exportReminderFrequencyDays: persistedState?.exportReminderFrequencyDays ?? 7,
-          lastExportReminderDismissed: persistedState?.lastExportReminderDismissed
-            ? new Date(persistedState.lastExportReminderDismissed)
+          historyRetentionDays: state?.historyRetentionDays ?? 7,
+          exportReminderEnabled: state?.exportReminderEnabled ?? true,
+          exportReminderFrequencyDays: state?.exportReminderFrequencyDays ?? 7,
+          lastExportReminderDismissed: state?.lastExportReminderDismissed
+            ? new Date(state.lastExportReminderDismissed)
             : null,
-          exportReminderSnoozedUntil: persistedState?.exportReminderSnoozedUntil
-            ? new Date(persistedState.exportReminderSnoozedUntil)
+          exportReminderSnoozedUntil: state?.exportReminderSnoozedUntil
+            ? new Date(state.exportReminderSnoozedUntil)
             : null,
           activeFilterMode,
-          todayViewDaysAhead: persistedState?.todayViewDaysAhead ?? 7,
-          todayViewComponents: persistedState?.todayViewComponents ?? {
+          todayViewDaysAhead: state?.todayViewDaysAhead ?? 7,
+          todayViewComponents: state?.todayViewComponents ?? {
             showOverdue: true,
             showDueSoon: true,
             showStarred: true,
           },
-          completedViewTimeframe: persistedState?.completedViewTimeframe ?? 'lastweek',
-          completedViewCustomRange: persistedState?.completedViewCustomRange
+          completedViewTimeframe: state?.completedViewTimeframe ?? 'lastweek',
+          completedViewCustomRange: state?.completedViewCustomRange
             ? {
-                start: new Date(persistedState.completedViewCustomRange.start),
-                end: new Date(persistedState.completedViewCustomRange.end),
+                start: new Date(state.completedViewCustomRange.start),
+                end: new Date(state.completedViewCustomRange.end),
               }
             : null,
         };

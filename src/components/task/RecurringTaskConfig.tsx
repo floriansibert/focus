@@ -480,21 +480,6 @@ export function RecurringTaskConfig({
     }
   };
 
-  const getIntervalLabel = (pattern: RecurrencePattern, interval: number): string => {
-    switch (pattern) {
-      case RecurrencePattern.DAILY:
-        return interval === 1 ? 'day' : 'days';
-      case RecurrencePattern.WEEKLY:
-        return interval === 1 ? 'week' : 'weeks';
-      case RecurrencePattern.MONTHLY:
-        return interval === 1 ? 'month' : 'months';
-      case RecurrencePattern.YEARLY:
-        return interval === 1 ? 'year' : 'years';
-      default:
-        return 'intervals';
-    }
-  };
-
   // Check if current config matches a preset
   const getActivePreset = (config: RecurrenceConfig): string | null => {
     for (const preset of RECURRING_PRESETS) {
@@ -575,13 +560,6 @@ export function RecurringTaskConfig({
         dayOfWeekInMonth: 1
       });
     }
-  };
-
-  const handleMonthlySimpleIntervalChange = (interval: number) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally removing fields
-    const { dayOfMonth: _dayOfMonth, weekOfMonth: _weekOfMonth, dayOfWeekInMonth: _dayOfWeekInMonth, ...rest } = currentRecurrence;
-    handleCustomChange({ ...rest, interval });
-    setMonthlyMode('simple');
   };
 
   const handleMonthlyDateChange = (day: number) => {
