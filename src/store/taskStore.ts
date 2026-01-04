@@ -738,6 +738,44 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
         get().syncToDB();
       }
+      // Case 1B: All subtasks still completed, update parent's completedAt if needed
+      else if (allCompleted && hasAnySubtasks && parent.completed) {
+        const latestCompletedAt = getLatestSubtaskCompletionDate(parent, allTasks);
+
+        // Only update if the latest completion date differs from parent's current date
+        if (latestCompletedAt &&
+            (!parent.completedAt || latestCompletedAt.getTime() !== parent.completedAt.getTime())) {
+          set((state) => ({
+            tasks: state.tasks.map((t) =>
+              t.id === parentTaskId
+                ? {
+                    ...t,
+                    completedAt: latestCompletedAt,
+                    updatedAt: new Date(),
+                  }
+                : t
+            ),
+          }));
+
+          get().syncToDB();
+
+          // Log the update for history tracking
+          const updatedParent = get().tasks.find((t) => t.id === parentTaskId);
+          if (updatedParent) {
+            historyLogger.logTaskUpdated(
+              updatedParent,
+              parent,
+              [
+                {
+                  field: 'completedAt',
+                  oldValue: parent.completedAt,
+                  newValue: latestCompletedAt
+                }
+              ]
+            );
+          }
+        }
+      }
       // Case 2: Not all subtasks completed → auto-uncomplete parent
       else if (!allCompleted && parent.completed && hasAnySubtasks) {
         set((state) => ({

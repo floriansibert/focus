@@ -1,16 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ArrowRight, ChevronDown, Check, Star, Plus, X, CornerDownRight } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ArrowRight, ChevronDown, Check, Plus, X, CornerDownRight } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { DatePicker } from '../ui/DatePicker';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { TagSelector } from './TagSelector';
-import { PeopleSelector } from './PeopleSelector';
 import { RecurringTaskConfig } from './RecurringTaskConfig';
 import { SubtaskList } from './SubtaskList';
 import { SubtaskProgressPie } from '../ui/SubtaskProgressPie';
 import { ParentSelectorModal } from './ParentSelectorModal';
+import { QuadrantIcon } from './QuadrantIcon';
+import { CompactQuadrantSelector } from './CompactQuadrantSelector';
+import { CompactMetadataBar } from './CompactMetadataBar';
 import { QuadrantType, TaskType, type Task, type RecurrenceConfig } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
 import { useUIStore } from '../../store/uiStore';
@@ -29,6 +30,7 @@ interface TaskModalProps {
 
 export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParentTaskId, onEditTask }: TaskModalProps) {
   const { addTask, updateTask, toggleComplete, toggleStar, tasks, addSubtask, moveSubtaskToParent, detachSubtask } = useTaskStore();
+  const { lastUsedQuadrant, setLastUsedQuadrant } = useUIStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -45,11 +47,13 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
   const [completedAt, setCompletedAt] = useState<Date | undefined>();
   const [errors, setErrors] = useState<{ title?: string }>({});
   const [hasChanges, setHasChanges] = useState(false);
-  const [isQuadrantExpanded, setIsQuadrantExpanded] = useState(false);
   const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
   const [pendingSubtasks, setPendingSubtasks] = useState<Array<{ title: string }>>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [isParentSelectorOpen, setIsParentSelectorOpen] = useState(false);
+
+  // Ref for auto-expanding description textarea
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   // Get the latest task data from store (to reflect real-time updates like completion status)
   const latestTask = task ? tasks.find((t) => t.id === task.id) || task : task;
@@ -88,6 +92,26 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
     }
   };
 
+  // Handler for description change with auto-expand
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDescription(e.target.value);
+
+    // Auto-expand logic
+    if (descriptionRef.current) {
+      descriptionRef.current.style.height = 'auto';
+      descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px';
+    }
+  };
+
+  // Handler for quadrant change with smart defaults
+  const handleQuadrantChange = (newQuadrant: QuadrantType) => {
+    setQuadrant(newQuadrant);
+    // Remember for next time when creating new tasks
+    if (!task) {
+      setLastUsedQuadrant(newQuadrant);
+    }
+  };
+
   // Reset form when modal opens/closes or task changes
   useEffect(() => {
     if (isOpen) {
@@ -109,7 +133,7 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
         // Add mode
         setTitle('');
         setDescription('');
-        setQuadrant(defaultQuadrant || QuadrantType.URGENT_IMPORTANT);
+        setQuadrant(defaultQuadrant || lastUsedQuadrant || QuadrantType.URGENT_IMPORTANT);
         setDueDate(undefined);
         setSelectedTags([]);
         setSelectedPeople([]);
@@ -124,6 +148,7 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
       }
       setErrors({});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, task, defaultQuadrant]);
 
   // Auto-expand subtasks if task has subtasks (separate effect to avoid form reset issues)
@@ -134,6 +159,14 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
       setIsSubtasksExpanded(hasSubtasks);
     }
   }, [isOpen, task, tasks]);
+
+  // Auto-expand description textarea
+  useEffect(() => {
+    if (descriptionRef.current) {
+      descriptionRef.current.style.height = 'auto';
+      descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px';
+    }
+  }, [description]);
 
   // Track form changes
   useEffect(() => {
@@ -325,7 +358,21 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={task ? 'Edit Task' : 'Add Task'}
+      title={
+        <div className="flex items-center gap-2">
+          <span>{task ? 'Edit Task' : 'Add Task'}</span>
+          {(task && isSubtask(task)) || defaultParentTaskId ? (
+            <div className="p-1 rounded border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+              <QuadrantIcon selectedQuadrant={quadrant} size={24} />
+            </div>
+          ) : (
+            <CompactQuadrantSelector
+              value={quadrant}
+              onChange={handleQuadrantChange}
+            />
+          )}
+        </div>
+      }
       size="lg"
       footer={
         <>
@@ -342,15 +389,39 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
         {/* Parent Task Info (for subtasks) */}
         {((task && latestTask && isSubtask(latestTask)) || defaultParentTaskId) && parentTask && (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <p className="text-sm text-blue-900 dark:text-blue-100">
-              {defaultParentTaskId && !task ? 'Adding subtask to: ' : 'This is a subtask of: '}<strong>{parentTask.title}</strong>
-            </p>
-            <button
-              onClick={() => onEditTask?.(parentTask)}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 flex items-center gap-1"
-            >
-              Go to parent task <ArrowRight size={12} />
-            </button>
+            <div className="flex items-center justify-between gap-3">
+              {/* Left: Parent task info */}
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                {defaultParentTaskId && !task ? 'Adding subtask to: ' : 'This is a subtask of: '}
+                <button
+                  onClick={() => onEditTask?.(parentTask)}
+                  className="font-bold hover:underline cursor-pointer"
+                >
+                  {parentTask.title}
+                </button>
+              </p>
+
+              {/* Right: Action buttons (only in edit mode) */}
+              {task && latestTask && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setIsParentSelectorOpen(true)}
+                  >
+                    Change Parent
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleDetachSubtask}
+                  >
+                    Convert to Task
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -387,10 +458,12 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
             Description
           </label>
           <textarea
+            ref={descriptionRef}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={handleDescriptionChange}
             placeholder="Add more details..."
-            rows={3}
+            rows={2}
+            style={{ minHeight: '4rem', maxHeight: '20rem', overflow: 'auto' }}
             className="
               w-full px-3 py-2 rounded-lg border
               bg-white dark:bg-gray-800
@@ -399,258 +472,102 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
               placeholder-gray-400 dark:placeholder-gray-500
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
               transition-colors
+              resize-none
             "
           />
         </div>
 
-        {/* Tags - Inline layout */}
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-            Tags:
-          </label>
-          <div className="flex-1">
-            <TagSelector selectedTags={selectedTags} onChange={setSelectedTags} />
-          </div>
-        </div>
-
-        {/* People - Inline layout */}
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-            People:
-          </label>
-          <div className="flex-1">
-            <PeopleSelector selectedPeople={selectedPeople} onChange={setSelectedPeople} />
-          </div>
-        </div>
-
-        {/* Star Status & Completion Status */}
-        <div className="flex gap-3">
-          {/* Star Status */}
-          <button
-            type="button"
-            onClick={() => {
-              if (task && latestTask) {
-                toggleStar(latestTask.id);
-              } else {
-                setIsStarred(!isStarred);
+        {/* Compact Metadata Bar */}
+        <CompactMetadataBar
+          selectedTags={selectedTags}
+          onTagsChange={setSelectedTags}
+          selectedPeople={selectedPeople}
+          onPeopleChange={setSelectedPeople}
+          dueDate={dueDate}
+          onDueDateChange={setDueDate}
+          isStarred={task ? latestTask?.isStarred || false : isStarred}
+          onStarToggle={() => {
+            if (task && latestTask) {
+              toggleStar(latestTask.id);
+            } else {
+              setIsStarred(!isStarred);
+            }
+          }}
+          isCompleted={task ? latestTask?.completed || false : completed}
+          onCompletionToggle={() => {
+            if (task && latestTask) {
+              toggleComplete(latestTask.id);
+            } else {
+              setCompleted(!completed);
+              if (!completed && !completedAt) {
+                setCompletedAt(new Date());
               }
-            }}
-            className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            <Star
-              size={20}
-              className={`flex-shrink-0 ${
-                task ? (latestTask?.isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600') : (isStarred ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600')
-              }`}
-            />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {task ? (latestTask?.isStarred ? 'Starred' : 'Star this task') : (isStarred ? 'Starred' : 'Star this task')}
-            </span>
-          </button>
+            }
+          }}
+          subtaskCount={subtaskCount > 0 ? subtaskCount : undefined}
+          completedSubtaskCount={completedSubtaskCount}
+          onSubtaskToggle={() => setIsSubtasksExpanded(!isSubtasksExpanded)}
+          isSubtasksExpanded={isSubtasksExpanded}
+        />
 
-          {/* Completion Status */}
-          <div className="flex-1 flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
-          {task && subtaskCount > 0 ? (
-            // Show progress indicator for tasks with subtasks (edit mode only)
-            <div className="flex items-center gap-2 w-full">
-              <SubtaskProgressPie
-                completed={completedSubtaskCount}
-                total={subtaskCount}
-                size={20}
-              />
-              <div className="flex-1">
-                <div className="text-sm text-gray-700 dark:text-gray-300">
-                  {completedSubtaskCount} of {subtaskCount} subtasks completed
-                </div>
-                {latestTask?.completed && latestTask?.completedAt && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Auto-completed on {new Date(latestTask.completedAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                )}
+        {/* Creation & Completion Date - Only show in edit mode */}
+        {task && latestTask && (
+          <div className="flex-1 flex items-center justify-between gap-2 p-3 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950">
+            {/* Left: Created date */}
+            {latestTask.createdAt && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Created
+                </span>
+                <span className="text-sm text-blue-900 dark:text-blue-100">
+                  {new Date(latestTask.createdAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
               </div>
-            </div>
-          ) : (
-            // Show checkbox for tasks without subtasks (both add and edit mode)
-            <div className="flex-1 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (task && latestTask) {
-                    toggleComplete(latestTask.id);
-                  } else {
-                    setCompleted(!completed);
-                    if (!completed && !completedAt) {
-                      setCompletedAt(new Date());
+            )}
+
+            {/* Right: Completed date (only when completed) */}
+            {latestTask.completed && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Completed
+                </span>
+                {subtaskCount > 0 ? (
+                  // Tasks with subtasks: read-only date (auto-computed)
+                  <span className="text-sm text-blue-900 dark:text-blue-100">
+                    {latestTask?.completedAt
+                      ? new Date(latestTask.completedAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : new Date().toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
                     }
-                  }
-                }}
-                className="flex-shrink-0"
-              >
-                <div
-                  className={`
-                    w-5 h-5 rounded border-2 flex items-center justify-center
-                    transition-colors
-                    ${
-                      task ? (latestTask?.completed ? 'bg-blue-600 border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:border-blue-500') : (completed ? 'bg-blue-600 border-blue-600' : 'border-gray-300 dark:border-gray-600 hover:border-blue-500')
-                    }
-                  `}
-                >
-                  {(task ? latestTask?.completed : completed) && <Check size={14} className="text-white" />}
-                </div>
-              </button>
-              <label
-                className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (task && latestTask) {
-                    toggleComplete(latestTask.id);
-                  } else {
-                    setCompleted(!completed);
-                    if (!completed && !completedAt) {
-                      setCompletedAt(new Date());
-                    }
-                  }
-                }}
-              >
-                {task ? (latestTask?.completed ? 'Completed' : 'Mark as complete') : (completed ? 'Will be created as completed' : 'Create as completed')}
-              </label>
-              {(task ? latestTask?.completed : completed) && (
-                <div className="flex items-center gap-2 ml-auto">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                    on
                   </span>
-                  <div className="w-44">
+                ) : (
+                  // Tasks without subtasks: editable DatePicker
+                  <div className="w-36">
                     <DatePicker
-                      value={task ? (latestTask?.completedAt ? new Date(latestTask.completedAt) : new Date()) : (completedAt || new Date())}
+                      compact
+                      allowClear={false}
+                      value={latestTask?.completedAt ? new Date(latestTask.completedAt) : new Date()}
                       onChange={(date) => {
-                        if (task && latestTask) {
-                          updateTask(latestTask.id, {
-                            completedAt: date || new Date(),
-                          });
-                        } else {
-                          setCompletedAt(date || new Date());
-                        }
+                        updateTask(latestTask.id, {
+                          completedAt: date || new Date(),
+                        });
                       }}
                     />
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-          </div>
-        </div>
-
-        {/* Quadrant Selector - Collapsible */}
-        {task && isSubtask(task) ? (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Quadrant
-            </label>
-            <div className="p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                {QUADRANT_INFO[quadrant].title}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Inherited from parent task
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div>
-            {/* Collapsible Header */}
-            <button
-              type="button"
-              onClick={() => setIsQuadrantExpanded(!isQuadrantExpanded)}
-              className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Quadrant:
-                </span>
-                <span className="text-sm text-gray-900 dark:text-gray-100">
-                  {QUADRANT_INFO[quadrant].title}
-                </span>
-              </div>
-              <ChevronDown
-                size={16}
-                className={`text-gray-500 dark:text-gray-400 transition-transform ${
-                  isQuadrantExpanded ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-
-            {/* Expandable Content */}
-            {isQuadrantExpanded && (
-              <div className="mt-2 grid grid-cols-2 gap-2 animate-fadeIn">
-                {Object.entries(QUADRANT_INFO).map(([key, info]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setQuadrant(key as QuadrantType)}
-                    className={`
-                      p-2 rounded-lg border-2 text-left transition-all
-                      ${
-                        quadrant === key
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                      }
-                    `}
-                  >
-                    <div className="font-medium text-xs text-gray-900 dark:text-gray-100">
-                      {info.title}
-                    </div>
-                  </button>
-                ))}
+                )}
               </div>
             )}
-          </div>
-        )}
-
-        {/* Parent Task Management (for subtasks only) */}
-        {task && latestTask && isSubtask(latestTask) && parentTask && (
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Parent Task
-            </label>
-
-            <div className="flex items-center gap-2">
-              {/* Current parent display */}
-              <div className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
-                <div className="flex items-center gap-2">
-                  <CornerDownRight size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-900 dark:text-gray-100">
-                    {parentTask.title}
-                  </span>
-                  <Badge color={QUADRANT_INFO[parentTask.quadrant].color} size="sm">
-                    {QUADRANT_INFO[parentTask.quadrant].shortLabel}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsParentSelectorOpen(true)}
-              >
-                Change Parent
-              </Button>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleDetachSubtask}
-              >
-                Convert to Task
-              </Button>
-            </div>
           </div>
         )}
 
@@ -675,7 +592,7 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
                 onClick={() => setIsSubtasksExpanded(!isSubtasksExpanded)}
                 className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Subtasks
                   </span>
@@ -759,19 +676,6 @@ export function TaskModal({ isOpen, onClose, task, defaultQuadrant, defaultParen
             </div>
           );
         })()}
-
-        {/* Due Date - Inline layout */}
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-            Due Date:
-          </label>
-          <div className="flex-1">
-            <DatePicker
-              value={dueDate}
-              onChange={setDueDate}
-            />
-          </div>
-        </div>
 
         <RecurringTaskConfig
           isRecurring={isRecurring}

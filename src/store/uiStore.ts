@@ -16,6 +16,9 @@ interface UIStore extends FilterState {
   helpModalSection: string;
   historyRetentionDays: number | null;
 
+  // Smart defaults
+  lastUsedQuadrant: QuadrantType | null;
+
   // Export reminder state
   exportReminderEnabled: boolean;
   exportReminderFrequencyDays: number; // 7, 14, 30, or 90
@@ -34,6 +37,7 @@ interface UIStore extends FilterState {
   collapseAllInQuadrant: (taskIds: string[]) => void;
   setFocusedQuadrant: (quadrant: QuadrantType | null) => void;
   toggleQuadrantFocus: (quadrant: QuadrantType) => void;
+  setLastUsedQuadrant: (quadrant: QuadrantType) => void;
 
   // Filter actions
   setSearchQuery: (query: string) => void;
@@ -72,7 +76,7 @@ interface UIStore extends FilterState {
   setActiveFilterMode: (mode: ViewMode | null) => void;
   setTodayViewDaysAhead: (days: number | null) => void;
   toggleTodayViewComponent: (component: 'showOverdue' | 'showDueSoon' | 'showStarred') => void;
-  setCompletedViewTimeframe: (timeframe: 'today' | 'yesterday' | 'thisweek' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom') => void;
+  setCompletedViewTimeframe: (timeframe: 'today' | 'yesterday' | 'thisweek' | 'thismonth' | 'lastweek' | '2weeksago' | 'lastmonth' | 'custom') => void;
   setCompletedViewCustomRange: (range: { start: Date; end: Date } | null) => void;
 
   // Pomodoro state
@@ -169,6 +173,9 @@ export const useUIStore = create<UIStore>()(
       // History retention
       historyRetentionDays: 7,
 
+      // Smart defaults
+      lastUsedQuadrant: null,
+
       // Export reminder defaults
       exportReminderEnabled: true,
       exportReminderFrequencyDays: 7, // Default to weekly
@@ -236,6 +243,8 @@ export const useUIStore = create<UIStore>()(
           focusedQuadrant: state.focusedQuadrant === quadrant ? null : quadrant,
         }));
       },
+
+      setLastUsedQuadrant: (quadrant) => set({ lastUsedQuadrant: quadrant }),
 
       // Filter actions
       setSearchQuery: (query) => set({ searchQuery: query }),
